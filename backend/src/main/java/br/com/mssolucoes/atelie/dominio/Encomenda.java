@@ -1,0 +1,56 @@
+package br.com.mssolucoes.atelie.dominio;
+
+import br.com.mssolucoes.atelie.dominio.Enums.Frente;
+import br.com.mssolucoes.atelie.dominio.Enums.StatusEncomenda;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "encomenda")
+@Getter
+@Setter
+public class Encomenda {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "cliente_id", nullable = false)
+    private Cliente cliente;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "orcamento_id")
+    private Orcamento orcamento;
+
+    @Column(nullable = false, length = 200)
+    private String descricao;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Frente frente = Frente.ENCOMENDA;
+
+    @Column(name = "valor_total", nullable = false, precision = 12, scale = 2)
+    private BigDecimal valorTotal = BigDecimal.ZERO;
+
+    @Column(name = "valor_sinal", nullable = false, precision = 12, scale = 2)
+    private BigDecimal valorSinal = BigDecimal.ZERO;
+
+    @Column(name = "prazo_entrega")
+    private LocalDate prazoEntrega;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private StatusEncomenda status = StatusEncomenda.AGUARDANDO_SINAL;
+
+    @Column(columnDefinition = "TEXT")
+    private String observacoes;
+
+    @Column(name = "criado_em", nullable = false)
+    private LocalDateTime criadoEm = LocalDateTime.now();
+}

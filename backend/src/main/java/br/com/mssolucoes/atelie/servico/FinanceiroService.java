@@ -1,0 +1,139 @@
+package br.com.mssolucoes.atelie.servico;
+
+import br.com.mssolucoes.atelie.dominio.Enums.*;
+import br.com.mssolucoes.atelie.dominio.Lancamento;
+import br.com.mssolucoes.atelie.dto.Dtos.*;
+import br.com.mssolucoes.atelie.repositorio.EncomendaRepository;
+import br.com.mssolucoes.atelie.repositorio.LancamentoRepository;
+import br.com.mssolucoes.atelie.web.NaoEncontradoException;
+import br.com.mssolucoes.atelie.web.RegraNegocioException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.*;
+
+@Service
+public class FinanceiroService {
+
+    private final LancamentoRepository repo;
+    private final EncomendaRepository encomendas;
+    private final EncomendaService encomendaService;
+
+    public FinanceiroService(LancamentoRepository repo, EncomendaRepository encomendas,
+                             EncomendaService encomendaService) {
+        this.repo = repo;
+        this.encomendas = encomendas;
+        this.encomendaService = encomendaService;
+    }
+
+    @Transactional(readOnly = true)
+    public ResumoFinanceiro resumo(int ano, int mes) {
+        YearMonth ym = YearMonth.of(ano, mes);
+        List<Lancamento> lista = repo.findByDataBetweenOrderByDataDescIdDesc(ym.atDay(1), ym.atEndOfMonth());
+        BigDecimal entradas = soma(lista, TipoLancamento.ENTRADA);
+        BigDecimal saidas = soma(lista, TipoLancamento.SAIDA);
+
+        List<EncomendaResp> aReceber = contasAReceber();
+        BigDecimal totalAReceber = aReceber.stream().map(EncomendaResp::saldo).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        Map<CategoriaLancamento, BigDecimal> porCategoria = new EnumMap<>(CategoriaLancamento.class);
+        lista.stream().filter(l -> l.getTipo() == TipoLancamento.ENTRADA)
+                .forEach(l -> porCategoria.merge(l.getCategoria(), l.getValor(), BigDecimal::add));
+
+        return new ResumoFinanceiro(ano, mes, entradas, saidas, entradas.subtract(saidas), totalAReceber,
+                percentuais(porCategoria, entradas), lista.stream().map(FinanceiroService::paraResp).toList(), aReceber);
+    }
+
+    /** Encomendas não canceladas com saldo em aberto (inclui entregues ainda não quitadas). */
+    @Transactional(readOnly = true)
+    public List<EncomendaResp> contasAReceber() {
+        return encomendas.findByStatusInOrderByPrazoEntregaAsc(EnumSet.of(StatusEncomenda.AGUARDANDO_SINAL,
+                        StatusEncomenda.EM_PRODUCAO, StatusEncomenda.PRONTA, StatusEncomenda.ENTREGUE))
+                .stream().map(encomendaService::paraResp)
+                .filter(e -> e.saldo().signum() > 0)
+                .toList();
+    }
+
+    @Transactional
+    public LancamentoResp criar(LancamentoReq r) {
+        Lancamento l = new Lancamento();
+        preencher(l, r);
+        return paraResp(repo.save(l));
+    }
+
+    @Transactional
+    public LancamentoResp atualizar(Long id, LancamentoReq r) {
+        Lancamento l = buscar(id);
+        if (l.getInscricao() != null) {
+            throw new RegraNegocioException("Este lançamento vem de uma inscrição. Altere pela oficina.");
+        }
+        preencher(l, r);
+        return paraResp(repo.save(l));
+    }
+
+    @Transactional
+    public void excluir(Long id) {
+        Lancamento l = buscar(id);
+        if (l.getInscricao() != null) {
+            throw new RegraNegocioException("Este lançamento vem de uma inscrição. Cancele a confirmação pela oficina.");
+        }
+        repo.delete(l);
+    }
+
+    private Lancamento buscar(Long id) {
+        return repo.findById(id).orElseThrow(() -> new NaoEncontradoException("Lançamento"));
+    }
+
+    private void preencher(Lancamento l, LancamentoReq r) {
+        l.setTipo(r.tipo());
+        l.setCategoria(r.categoria());
+        l.setDescricao(r.descricao().trim());
+        l.setValor(r.valor());
+        l.setData(r.data());
+        l.setFormaPagamento(r.formaPagamento() == null ? FormaPagamento.PIX : r.formaPagamento());
+    }
+
+    static BigDecimal soma(List<Lancamento> lista, TipoLancamento tipo) {
+        return lista.stream().filter(l -> l.getTipo() == tipo)
+                .map(Lancamento::getValor).reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    static List<ValorPorNome> percentuais(Map<CategoriaLancamento, BigDecimal> mapa, BigDecimal total) {
+        List<ValorPorNome> out = new ArrayList<>();
+        mapa.entrySet().stream()
+                .sorted(Map.Entry.<CategoriaLancamento, BigDecimal>comparingByValue().reversed())
+                .forEach(e -> {
+                    int pct = total.signum() == 0 ? 0 : e.getValue().multiply(BigDecimal.valueOf(100))
+                            .divide(total, 0, RoundingMode.HALF_UP).intValue();
+                    out.add(new ValorPorNome(nome(e.getKey()), e.getValue(), pct));
+                });
+        return out;
+    }
+
+    public static String nome(CategoriaLancamento c) {
+        return switch (c) {
+            case ENCOMENDA -> "Encomendas";
+            case CASAMENTO -> "Casamentos";
+            case PRESENTE -> "Presentes";
+            case OFICINA -> "Oficinas";
+            case MATERIAL -> "Materiais";
+            case OUTROS -> "Outros";
+        };
+    }
+
+    public static LancamentoResp paraResp(Lancamento l) {
+        return new LancamentoResp(l.getId(), l.getTipo(), l.getCategoria(), l.getDescricao(), l.getValor(),
+                l.getData(), l.getFormaPagamento(),
+                l.getEncomenda() == null ? null : l.getEncomenda().getId(),
+                l.getInscricao() == null ? null : l.getInscricao().getId(),
+                l.getInscricao() != null);
+    }
+
+    static LocalDate hoje() {
+        return LocalDate.now();
+    }
+}

@@ -1,0 +1,45 @@
+server:
+  port: ${PORT:8080}
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+
+spring:
+  application:
+    name: lenne-atelie
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/lenne_atelie?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Fortaleza&characterEncoding=UTF-8}
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: America/Fortaleza
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 8MB
+      max-request-size: 10MB
+  jackson:
+    time-zone: America/Fortaleza
+    serialization:
+      write-dates-as-timestamps: false
+
+atelie:
+  jwt:
+    # Troque em produção (mínimo 32 caracteres). Ex.: variável de ambiente JWT_SECRET
+    secret: ${JWT_SECRET:troque-este-segredo-em-producao-lenne-atelie-2026}
+    expiracao-horas: ${JWT_EXPIRACAO_HORAS:12}
+  admin:
+    # Usuário criado automaticamente na primeira execução, se não houver nenhum
+    nome: ${ADMIN_NOME:Lenne Carvalho}
+    email: ${ADMIN_EMAIL:lenne@atelie.local}
+    senha: ${ADMIN_SENHA:trocar123}
+  uploads-dir: ${UPLOADS_DIR:./uploads}
+  cors-origens: ${CORS_ORIGENS:http://localhost:5173}
