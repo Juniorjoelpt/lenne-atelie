@@ -82,10 +82,12 @@ public class ClienteService {
         c.setAniversario(r.aniversario());
         c.setTipo(r.tipo() == null ? TipoCliente.CLIENTE : r.tipo());
         c.setObservacoes(Texto.limpar(r.observacoes()));
+        c.setDocumento(Texto.limpar(r.documento()));
+        c.setEndereco(Texto.limpar(r.endereco()));
     }
 
     public static ClienteResp paraResp(Cliente c) {
         return new ClienteResp(c.getId(), c.getNome(), c.getWhatsapp(), c.getEmail(), c.getCidade(),
-                c.getAniversario(), c.getTipo(), c.getObservacoes(), c.getCriadoEm());
+                c.getAniversario(), c.getTipo(), c.getObservacoes(), c.getCriadoEm(), c.getDocumento(), c.getEndereco());
     }
 }

@@ -8,6 +8,7 @@ spring:
 
 atelie:
   uploads-dir: ./target/uploads-teste
+  uploads-privados-dir: ./target/uploads-privados-teste
   admin:
     email: teste@atelie.local
     senha: senha-teste-123

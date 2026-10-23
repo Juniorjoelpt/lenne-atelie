@@ -37,6 +37,16 @@ function Conteudo({ p }) {
 
   return (
     <>
+      {p.lembretes > 0 && (
+        <Link to="/admin/lembretes" className="clay" style={{ background: 'var(--ocre-claro)', borderRadius: 28, padding: '16px 22px', display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none', color: 'var(--marrom)' }}>
+          <div className="icone-caixa" style={{ background: 'var(--ocre)' }}><Icone nome="sino" cor="#FFFDF8" tamanho={26} /></div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontWeight: 900, fontSize: 18 }}>{p.lembretes} {p.lembretes === 1 ? 'lembrete de WhatsApp' : 'lembretes de WhatsApp'} para hoje</p>
+            <p style={{ fontWeight: 700, color: 'var(--ocre-texto)' }}>Oficinas, peças prontas, saldos e aniversários: as mensagens já estão escritas.</p>
+          </div>
+          <Icone nome="seta" />
+        </Link>
+      )}
       <section className="boas-vindas" aria-label="Boas-vindas">
         <div style={{ flex: '1 1 300px', minWidth: 0 }}>
           <p style={{ fontSize: 30, fontWeight: 900, color: 'var(--terra-escuro)' }}>{p.saudacao}, {primeiroNome(sessao.nome()) || 'Lenne'}!</p>

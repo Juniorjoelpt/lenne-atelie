@@ -66,7 +66,9 @@ export default function Clientes() {
           <Campo rotulo="Tipo" nome="tipo" opcoes={TIPOS_CLIENTE} defaultValue={form.tipo || 'CLIENTE'} />
           <Campo rotulo="E-mail" nome="email" tipo="email" defaultValue={form.email} maxLength={160} />
           <Campo rotulo="Cidade" nome="cidade" defaultValue={form.cidade} maxLength={120} />
-          <Campo rotulo="Aniversário" nome="aniversario" tipo="date" defaultValue={form.aniversario} />
+          <Campo rotulo="Aniversário" nome="aniversario" tipo="date" defaultValue={form.aniversario} dica="Gera o lembrete de parabéns no dia." />
+          <Campo rotulo="CPF ou CNPJ" nome="documento" defaultValue={form.documento} maxLength={30} dica="Usado no contrato (opcional)." />
+          <Campo rotulo="Endereço" nome="endereco" defaultValue={form.endereco} maxLength={255} inteiro dica="Usado no contrato (opcional)." />
           <Campo rotulo="Observações" nome="observacoes" linhas={3} defaultValue={form.observacoes} inteiro placeholder="Preferências, decoradora parceira, como conheceu o ateliê…" />
         </ModalForm>
       )}
@@ -100,6 +102,8 @@ function Detalhe({ id, aoFechar, aoEditar, aoExcluir }) {
               <Info rotulo="E-mail" valor={c.email || '—'} />
               <Info rotulo="Cidade" valor={c.cidade || '—'} />
               <Info rotulo="Aniversário" valor={c.aniversario ? data(c.aniversario) : '—'} />
+              {c.documento && <Info rotulo="CPF/CNPJ" valor={c.documento} />}
+              {c.endereco && <Info rotulo="Endereço" valor={c.endereco} />}
               <Info rotulo="Total já pago em encomendas" valor={moeda(d.totalPago)} />
               {c.observacoes && <div className="inteiro"><Info rotulo="Observações" valor={c.observacoes} /></div>}
             </div>

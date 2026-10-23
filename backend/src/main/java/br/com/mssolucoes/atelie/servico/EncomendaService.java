@@ -33,9 +33,15 @@ public class EncomendaService {
     private final ProdutoRepository produtos;
     private final ConsumoService consumos;
     private final PrecificacaoService precificacao;
+    private final br.com.mssolucoes.atelie.repositorio.EncomendaFotoRepository fotos;
+    private final br.com.mssolucoes.atelie.repositorio.CompromissoRepository compromissos;
 
     public EncomendaService(EncomendaRepository repo, LancamentoRepository lancamentos, ClienteService clientes,
-                            ProdutoRepository produtos, ConsumoService consumos, PrecificacaoService precificacao) {
+                            ProdutoRepository produtos, ConsumoService consumos, PrecificacaoService precificacao,
+                            br.com.mssolucoes.atelie.repositorio.EncomendaFotoRepository fotos,
+                            br.com.mssolucoes.atelie.repositorio.CompromissoRepository compromissos) {
+        this.fotos = fotos;
+        this.compromissos = compromissos;
         this.repo = repo;
         this.lancamentos = lancamentos;
         this.clientes = clientes;
@@ -98,6 +104,13 @@ public class EncomendaService {
     /** Salva e, se a peça entrou em produção, baixa os materiais da ficha. */
     @Transactional
     public EncomendaResp salvarEProcessar(Encomenda e) {
+        if (e.getStatus() == StatusEncomenda.ENTREGUE) {
+            if (e.getEntregueEm() == null) {
+                e.setEntregueEm(LocalDate.now());
+            }
+        } else {
+            e.setEntregueEm(null);
+        }
         repo.save(e);
         consumos.aposMudarStatus(e);
         return paraResp(repo.save(e));
@@ -168,6 +181,9 @@ public class EncomendaService {
         Encomenda e = buscar(id);
         if (!lancamentos.findByEncomendaIdOrderByDataAsc(id).isEmpty()) {
             throw new RegraNegocioException("Esta encomenda tem pagamentos registrados. Cancele em vez de excluir.");
+        }
+        if (fotos.countByEncomendaId(id) > 0 || compromissos.existsByEncomendaId(id)) {
+            throw new RegraNegocioException("Esta encomenda tem fotos ou compromissos na agenda. Cancele em vez de excluir.");
         }
         consumos.estornarTudo(id);
         repo.delete(e);
@@ -243,6 +259,6 @@ public class EncomendaService {
                 e.getDescricao(), e.getFrente(), p == null ? null : p.getId(), p == null ? null : p.getNome(),
                 e.getQuantidade(), e.getHorasTrabalhadas(), e.isMateriaisBaixados(),
                 e.getValorTotal(), e.getValorSinal(), pago, saldo,
-                e.getPrazoEntrega(), e.getStatus(), e.getObservacoes(), e.getCriadoEm(), custos(e));
+                e.getPrazoEntrega(), e.getStatus(), e.getObservacoes(), e.getCriadoEm(), custos(e), e.getEntregueEm());
     }
 }

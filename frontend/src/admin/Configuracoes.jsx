@@ -13,6 +13,7 @@ export default function Configuracoes() {
       <Estado carregando={carregando} erro={erro}>
         {c && <DadosAtelie c={c} />}
       </Estado>
+      <Documentos />
       <TrocarSenha />
     </>
   );
@@ -166,5 +167,50 @@ function FormPrecificacao({ p }) {
       </div>
       <div className="modal-rodape"><button type="submit" className="btn btn-terra" disabled={salvando}>{salvando ? 'Salvando…' : 'Salvar precificação'}</button></div>
     </form>
+  );
+}
+
+function Documentos() {
+  const { dados: d, erro: erroCarga, carregando } = useCarregar(() => api.get('/api/configuracoes/documentos'));
+  const [erro, setErro] = useState(null);
+  const [salvando, setSalvando] = useState(false);
+  const toast = useToast();
+
+  async function salvar(e) {
+    e.preventDefault();
+    setErro(null);
+    setSalvando(true);
+    try {
+      await api.put('/api/configuracoes/documentos', lerForm(new FormData(e.currentTarget), ['sinalPercentual', 'validadePropostaDias']));
+      toast('Dados da proposta e do contrato salvos.');
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <Estado carregando={carregando} erro={erroCarga}>
+      {d && (
+        <form className="cartao" onSubmit={salvar} noValidate>
+          <div className="cartao-titulo"><h2>Proposta e contrato</h2><span className="selo selo-areia">só aparece nos PDFs</span></div>
+          <p className="mudo forte" style={{ marginBottom: 16, fontSize: 15 }}>
+            Esses dados entram na proposta (gerada no orçamento) e no contrato (gerado na encomenda).
+            O contrato é um modelo: vale pedir para alguém de confiança revisar o texto.
+          </p>
+          {erro && <div className="aviso aviso-erro" role="alert" style={{ marginBottom: 16 }}>{erro}</div>}
+          <div className="form-grade">
+            <Campo rotulo="Seu nome completo" nome="responsavel" defaultValue={d.responsavel} maxLength={120} dica="Assina a proposta e o contrato." />
+            <Campo rotulo="CPF ou CNPJ do ateliê" nome="documento" defaultValue={d.documento} maxLength={30} dica="Se ficar vazio, o contrato sai com espaço para preencher à mão." />
+            <Campo rotulo="Sinal padrão (%)" nome="sinalPercentual" tipo="number" min="0" max="100" step="5" defaultValue={Number(d.sinalPercentual)} required />
+            <Campo rotulo="Validade da proposta (dias)" nome="validadePropostaDias" tipo="number" min="1" max="365" step="1" defaultValue={d.validadePropostaDias} required />
+            <Campo rotulo="Condições da proposta" nome="condicoesProposta" linhas={4} defaultValue={d.condicoesProposta} inteiro maxLength={4000} />
+            <Campo rotulo="Regras de cancelamento (vão para o contrato)" nome="politicaCancelamento" linhas={5} defaultValue={d.politicaCancelamento} inteiro maxLength={4000} />
+          </div>
+          <div className="modal-rodape"><button type="submit" className="btn btn-terra" disabled={salvando}>{salvando ? 'Salvando…' : 'Salvar'}</button></div>
+        </form>
+      )}
+    </Estado>
   );
 }

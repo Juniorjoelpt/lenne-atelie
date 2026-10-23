@@ -56,7 +56,45 @@ async function chamar(metodo, url, corpo, { formData = false } = {}) {
   return dados;
 }
 
+/** Baixa um arquivo protegido (PDF, planilha) e salva com o nome que o servidor mandou. */
+async function baixar(url, nomePadrao = 'arquivo') {
+  const token = sessao.token();
+  let resp;
+  try {
+    resp = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  } catch {
+    throw new ErroApi('Sem conexão com o servidor. Verifique a internet e tente de novo.', 0);
+  }
+  if (!resp.ok) {
+    let msg = 'Não foi possível gerar o arquivo.';
+    try { msg = (await resp.json()).erro || msg; } catch { /* resposta sem JSON */ }
+    if (resp.status === 401) { sessao.sair(); window.location.href = '/admin/entrar?expirou=1'; }
+    throw new ErroApi(msg, resp.status);
+  }
+  const cd = resp.headers.get('Content-Disposition') || '';
+  const m = /filename\*=UTF-8''([^;]+)/i.exec(cd) || /filename="?([^";]+)"?/i.exec(cd);
+  const nome = m ? decodeURIComponent(m[1]) : nomePadrao;
+  const blob = await resp.blob();
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = nome;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), 4000);
+  return nome;
+}
+
+/** Busca uma imagem que exige login e devolve um endereço local (blob:) para o <img>. */
+async function imagem(url) {
+  const resp = await fetch(url, { headers: { Authorization: `Bearer ${sessao.token()}` } });
+  if (!resp.ok) throw new ErroApi('Não foi possível abrir a foto.', resp.status);
+  return URL.createObjectURL(await resp.blob());
+}
+
 export const api = {
+  baixar,
+  imagem,
   get: (url) => chamar('GET', url),
   post: (url, corpo) => chamar('POST', url, corpo ?? {}),
   put: (url, corpo) => chamar('PUT', url, corpo),

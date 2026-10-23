@@ -64,6 +64,27 @@ public class Configuracao {
     @Column(name = "margem_padrao", nullable = false, precision = 5, scale = 2)
     private java.math.BigDecimal margemPadrao = java.math.BigDecimal.valueOf(30);
 
+    // ---- Proposta e contrato ----
+
+    @Column(length = 120)
+    private String responsavel;
+
+    /** CPF ou CNPJ do ateliê. */
+    @Column(length = 30)
+    private String documento;
+
+    @Column(name = "sinal_percentual", nullable = false, precision = 5, scale = 2)
+    private java.math.BigDecimal sinalPercentual = java.math.BigDecimal.valueOf(50);
+
+    @Column(name = "validade_proposta_dias", nullable = false)
+    private int validadePropostaDias = 15;
+
+    @Column(name = "condicoes_proposta", columnDefinition = "TEXT")
+    private String condicoesProposta;
+
+    @Column(name = "politica_cancelamento", columnDefinition = "TEXT")
+    private String politicaCancelamento;
+
     @Column(name = "atualizado_em", nullable = false)
     private LocalDateTime atualizadoEm = LocalDateTime.now();
 }

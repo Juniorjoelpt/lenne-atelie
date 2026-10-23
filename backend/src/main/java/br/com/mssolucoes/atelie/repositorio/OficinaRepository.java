@@ -12,6 +12,8 @@ public interface OficinaRepository extends JpaRepository<Oficina, Long> {
 
     List<Oficina> findAllByOrderByInicioDesc();
 
+    List<Oficina> findByInicioBetweenOrderByInicioAsc(LocalDateTime de, LocalDateTime ate);
+
     List<Oficina> findByPublicadaTrueAndStatusAndInicioAfterOrderByInicioAsc(StatusOficina status, LocalDateTime depois);
 
     Optional<Oficina> findFirstByStatusAndInicioAfterOrderByInicioAsc(StatusOficina status, LocalDateTime depois);

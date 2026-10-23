@@ -1,7 +1,10 @@
 package br.com.mssolucoes.atelie.servico;
 
+import br.com.mssolucoes.atelie.web.NaoEncontradoException;
 import br.com.mssolucoes.atelie.web.RegraNegocioException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.PathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,7 +16,11 @@ import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.UUID;
 
-/** Salva as fotos do portfólio na pasta de uploads. */
+/**
+ * Guarda as imagens em duas pastas:
+ * - pública (servida em /uploads/**): fotos do portfólio, que aparecem no site;
+ * - privada (nunca servida direto): fotos das encomendas, abertas só com login.
+ */
 @Service
 public class ArmazenamentoService {
 
@@ -23,10 +30,17 @@ public class ArmazenamentoService {
             "image/webp", ".webp");
 
     private final Path pasta;
+    private final Path pastaPrivada;
 
-    public ArmazenamentoService(@Value("${atelie.uploads-dir}") String pasta) throws IOException {
+    public ArmazenamentoService(@Value("${atelie.uploads-dir}") String pasta,
+                                @Value("${atelie.uploads-privados-dir}") String pastaPrivada) throws IOException {
         this.pasta = Path.of(pasta).toAbsolutePath().normalize();
+        this.pastaPrivada = Path.of(pastaPrivada).toAbsolutePath().normalize();
+        if (this.pastaPrivada.startsWith(this.pasta)) {
+            throw new IllegalStateException("A pasta privada não pode ficar dentro da pasta pública de uploads.");
+        }
         Files.createDirectories(this.pasta);
+        Files.createDirectories(this.pastaPrivada);
     }
 
     public Path getPasta() {
@@ -34,6 +48,56 @@ public class ArmazenamentoService {
     }
 
     public String salvarImagem(MultipartFile arquivo) {
+        return salvar(arquivo, pasta);
+    }
+
+    public String salvarImagemPrivada(MultipartFile arquivo) {
+        return salvar(arquivo, pastaPrivada);
+    }
+
+    public void excluir(String nome) {
+        apagar(pasta, nome);
+    }
+
+    public void excluirPrivada(String nome) {
+        apagar(pastaPrivada, nome);
+    }
+
+    public Resource abrirPrivada(String nome) {
+        Path p = resolver(pastaPrivada, nome);
+        if (p == null || !Files.isReadable(p)) {
+            throw new NaoEncontradoException("Arquivo da foto");
+        }
+        return new PathResource(p);
+    }
+
+    /** Copia uma foto privada para a pasta pública (ao publicar no portfólio). */
+    public String publicarCopia(String nomePrivado) {
+        Path origem = resolver(pastaPrivada, nomePrivado);
+        if (origem == null || !Files.isReadable(origem)) {
+            throw new NaoEncontradoException("Arquivo da foto");
+        }
+        String extensao = nomePrivado.substring(nomePrivado.lastIndexOf('.'));
+        String novo = UUID.randomUUID() + extensao;
+        try {
+            Files.copy(origem, pasta.resolve(novo));
+        } catch (IOException e) {
+            throw new RegraNegocioException("Não foi possível publicar a foto.");
+        }
+        return novo;
+    }
+
+    public static String tipoMime(String nome) {
+        if (nome.endsWith(".png")) {
+            return "image/png";
+        }
+        if (nome.endsWith(".webp")) {
+            return "image/webp";
+        }
+        return "image/jpeg";
+    }
+
+    private String salvar(MultipartFile arquivo, Path destino) {
         if (arquivo == null || arquivo.isEmpty()) {
             throw new RegraNegocioException("Envie uma imagem.");
         }
@@ -51,21 +115,30 @@ public class ArmazenamentoService {
         }
         String nome = UUID.randomUUID() + extensao;
         try (InputStream in = arquivo.getInputStream()) {
-            Files.copy(in, pasta.resolve(nome), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(in, destino.resolve(nome), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             throw new RegraNegocioException("Não foi possível salvar a imagem.");
         }
         return nome;
     }
 
-    public void excluir(String nome) {
+    private static Path resolver(Path base, String nome) {
         if (nome == null || nome.contains("/") || nome.contains("\\") || nome.contains("..")) {
+            return null;
+        }
+        Path p = base.resolve(nome).normalize();
+        return p.startsWith(base) ? p : null;
+    }
+
+    private static void apagar(Path base, String nome) {
+        Path p = resolver(base, nome);
+        if (p == null) {
             return;
         }
         try {
-            Files.deleteIfExists(pasta.resolve(nome));
+            Files.deleteIfExists(p);
         } catch (IOException ignorado) {
-            // a foto some do site mesmo que o arquivo não seja apagado
+            // a foto some do sistema mesmo que o arquivo não seja apagado
         }
     }
 

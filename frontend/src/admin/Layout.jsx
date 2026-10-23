@@ -10,9 +10,11 @@ const MENU = [
   ['/admin/encomendas', 'encomenda', 'Encomendas'],
   ['/admin/produtos', 'etiqueta', 'Produtos'],
   ['/admin/vendas', 'sacola', 'Vendas'],
+  ['/admin/agenda', 'calendario', 'Agenda'],
   ['/admin/oficinas', 'oficina', 'Oficinas'],
   ['/admin/clientes', 'cliente', 'Clientes'],
   ['/admin/financeiro', 'financeiro', 'Financeiro'],
+  ['/admin/relatorios', 'grafico', 'Relatórios'],
   ['/admin/materiais', 'material', 'Materiais'],
   ['/admin/portfolio', 'portfolio', 'Portfólio'],
   ['/admin/configuracoes', 'config', 'Configurações'],
@@ -21,6 +23,7 @@ const MENU = [
 export default function Layout() {
   const [aberto, setAberto] = useState(false);
   const [pix, setPix] = useState(0);
+  const [lembretes, setLembretes] = useState(0);
   const local = useLocation();
   const ir = useNavigate();
   const nome = sessao.nome();
@@ -28,6 +31,7 @@ export default function Layout() {
   useEffect(() => {
     setAberto(false);
     api.get('/api/inscricoes/pix-a-conferir').then((l) => setPix(l.length)).catch(() => {});
+    api.get('/api/lembretes').then((l) => setLembretes(l.length)).catch(() => {});
   }, [local.pathname]);
 
   function sair() {
@@ -51,6 +55,13 @@ export default function Layout() {
             </NavLink>
           ))}
         </nav>
+        {lembretes > 0 && (
+          <Link to="/admin/lembretes" className="clay" style={{ background: 'var(--ocre-claro)', borderRadius: 26, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', color: 'var(--marrom)' }}>
+            <Icone nome="sino" tamanho={26} cor="var(--ocre-texto)" />
+            <span style={{ flex: 1, fontWeight: 800, lineHeight: 1.25 }}>{lembretes} {lembretes === 1 ? 'lembrete' : 'lembretes'} para enviar hoje</span>
+            <Icone nome="seta" tamanho={18} />
+          </Link>
+        )}
         {pix > 0 && (
           <div className="clay" style={{ background: 'var(--terra-claro)', borderRadius: 30, padding: 20, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
             <Icone nome="pix" tamanho={34} cor="var(--terra)" />

@@ -17,11 +17,12 @@ RUN mvn -q -DskipTests package
 
 # 3) Imagem final, só com o Java
 FROM eclipse-temurin:21-jre
-RUN useradd --system --uid 1001 atelie && mkdir -p /data/uploads && chown -R atelie /data
+RUN useradd --system --uid 1001 atelie && mkdir -p /data/uploads /data/privado && chown -R atelie /data
 WORKDIR /app
 COPY --from=backend /app/backend/target/lenne-atelie.jar app.jar
 USER atelie
 ENV UPLOADS_DIR=/data/uploads \
+    UPLOADS_PRIVADOS_DIR=/data/privado \
     JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=70 -Duser.timezone=America/Fortaleza"
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

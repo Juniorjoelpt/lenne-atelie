@@ -88,7 +88,16 @@ function Detalhe({ orcamento: o, aoFechar, aoEditar, aoMudar }) {
   const [aprovar, setAprovar] = useState(false);
   const [excluir, setExcluir] = useState(false);
   const [erro, setErro] = useState(null);
+  const [gerando, setGerando] = useState(false);
   const toast = useToast();
+
+  async function proposta() {
+    setErro(null);
+    setGerando(true);
+    try { toast(`${await api.baixar(`/api/orcamentos/${o.id}/proposta`)} baixada. Envie para a cliente pelo WhatsApp.`); }
+    catch (err) { setErro(err.message); }
+    finally { setGerando(false); }
+  }
 
   async function status(s) {
     try {
@@ -126,6 +135,8 @@ function Detalhe({ orcamento: o, aoFechar, aoEditar, aoMudar }) {
     <Modal titulo={`Orçamento de ${o.nome}`} aoFechar={aoFechar} largo rodape={<>
       {!fechado && <button type="button" className="btn btn-perigo" onClick={() => setExcluir(true)}><Icone nome="lixo" tamanho={18} />Excluir</button>}
       {!fechado && <button type="button" className="btn btn-claro" onClick={aoEditar}><Icone nome="editar" tamanho={18} />Editar</button>}
+      {!fechado && <button type="button" className="btn btn-claro" onClick={proposta} disabled={gerando || o.valorProposto == null}
+        title={o.valorProposto == null ? 'Informe o valor proposto (Editar) para gerar a proposta' : undefined}><Icone nome="pdf" tamanho={18} />{gerando ? 'Gerando…' : 'Proposta (PDF)'}</button>}
       {o.status === 'NOVO' && <button type="button" className="btn btn-claro" onClick={() => status('RESPONDIDO')}>Marcar como respondido</button>}
       {!fechado && o.status !== 'RECUSADO' && <button type="button" className="btn btn-claro" onClick={() => status('RECUSADO')}>Recusado</button>}
       {o.status === 'RECUSADO' && <button type="button" className="btn btn-claro" onClick={() => status('RESPONDIDO')}>Reabrir</button>}
@@ -146,6 +157,9 @@ function Detalhe({ orcamento: o, aoFechar, aoEditar, aoMudar }) {
         <Info rotulo="Valor proposto" valor={o.valorProposto != null ? moeda(o.valorProposto) : '—'} />
         <div className="inteiro"><Info rotulo="Detalhes" valor={o.detalhes || '—'} /></div>
       </div>
+      {o.valorProposto == null && !fechado && (
+        <p className="mudo forte" style={{ fontSize: 14, marginTop: 14 }}>Para gerar a proposta em PDF, informe o valor proposto em "Editar".</p>
+      )}
       {o.whatsapp && !fechado && (
         <a className="btn btn-oliva" style={{ marginTop: 18 }} href={linkWhats(o.whatsapp, resposta)} target="_blank" rel="noopener noreferrer">
           <Icone nome="whats" tamanho={18} />Responder no WhatsApp

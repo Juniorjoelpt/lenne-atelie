@@ -120,7 +120,7 @@ export function Campo({ rotulo, nome, tipo = 'text', inteiro, dica, opcoes, linh
   if (opcoes) {
     controle = (
       <select id={id} name={nome} className="entrada" {...resto}>
-        {Object.entries(opcoes).map(([v, r]) => <option key={v} value={v}>{r}</option>)}
+        {(Array.isArray(opcoes) ? opcoes : Object.entries(opcoes)).map(([v, r]) => <option key={v} value={v}>{r}</option>)}
       </select>
     );
   } else if (linhas) {

@@ -66,6 +66,9 @@ public class Encomenda {
     @Column(columnDefinition = "TEXT")
     private String observacoes;
 
+    @Column(name = "entregue_em")
+    private LocalDate entregueEm;
+
     @Column(name = "criado_em", nullable = false)
     private LocalDateTime criadoEm = LocalDateTime.now();
 }

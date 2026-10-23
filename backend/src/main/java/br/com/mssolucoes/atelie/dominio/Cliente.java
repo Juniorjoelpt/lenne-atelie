@@ -30,6 +30,13 @@ public class Cliente {
     @Column(length = 120)
     private String cidade;
 
+    /** CPF ou CNPJ, usado no contrato. */
+    @Column(length = 30)
+    private String documento;
+
+    @Column(length = 255)
+    private String endereco;
+
     private LocalDate aniversario;
 
     @Enumerated(EnumType.STRING)

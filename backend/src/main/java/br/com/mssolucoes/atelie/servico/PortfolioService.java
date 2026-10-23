@@ -41,6 +41,24 @@ public class PortfolioService {
         return paraResp(repo.save(p));
     }
 
+    /** Cria o item a partir de um arquivo que já está na pasta pública (foto publicada de uma encomenda). */
+    @Transactional
+    public PortfolioItem criarComArquivo(String titulo, br.com.mssolucoes.atelie.dominio.Enums.CategoriaPortfolio categoria,
+                                         String arquivoPublico) {
+        PortfolioItem p = new PortfolioItem();
+        p.setArquivo(arquivoPublico);
+        p.setTitulo(titulo);
+        p.setCategoria(categoria);
+        p.setOrdem(0);
+        p.setPublicado(true);
+        return repo.save(p);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existe(Long id) {
+        return id != null && repo.existsById(id);
+    }
+
     @Transactional
     public PortfolioResp atualizar(Long id, PortfolioReq r) {
         PortfolioItem p = buscar(id);

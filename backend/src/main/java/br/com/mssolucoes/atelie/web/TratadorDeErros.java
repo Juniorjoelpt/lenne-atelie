@@ -45,6 +45,13 @@ public class TratadorDeErros {
         return erro(HttpStatus.BAD_REQUEST, "Dados inválidos. Verifique datas, números e opções.");
     }
 
+    @ExceptionHandler({org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
+            org.springframework.web.bind.MissingServletRequestParameterException.class,
+            org.springframework.web.multipart.support.MissingServletRequestPartException.class})
+    public ResponseEntity<Map<String, Object>> parametro(Exception e) {
+        return erro(HttpStatus.BAD_REQUEST, "Parâmetro ausente ou inválido. Verifique datas e opções.");
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, Object>> credenciais(BadCredentialsException e) {
         return erro(HttpStatus.UNAUTHORIZED, "E-mail ou senha incorretos.");

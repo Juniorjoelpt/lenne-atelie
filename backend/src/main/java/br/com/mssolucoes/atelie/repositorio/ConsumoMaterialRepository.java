@@ -19,6 +19,9 @@ public interface ConsumoMaterialRepository extends JpaRepository<ConsumoMaterial
 
     boolean existsByMaterialId(Long materialId);
 
+    @EntityGraph(attributePaths = "material")
+    List<ConsumoMaterial> findByDataBetween(java.time.LocalDate de, java.time.LocalDate ate);
+
     boolean existsByEncomendaId(Long encomendaId);
 
     boolean existsByProdutoId(Long produtoId);

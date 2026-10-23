@@ -14,6 +14,8 @@ public interface LancamentoRepository extends JpaRepository<Lancamento, Long> {
 
     List<Lancamento> findByDataBetweenOrderByDataDescIdDesc(LocalDate de, LocalDate ate);
 
+    List<Lancamento> findByDataBetween(LocalDate de, LocalDate ate);
+
     List<Lancamento> findByEncomendaIdOrderByDataAsc(Long encomendaId);
 
     List<Lancamento> findByTipoAndDataBetween(TipoLancamento tipo, LocalDate de, LocalDate ate);

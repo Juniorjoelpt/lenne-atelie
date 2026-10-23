@@ -30,8 +30,9 @@ public class PainelService {
     private final FinanceiroService financeiro;
     private final OficinaService oficinas;
     private final MaterialService materiais;
+    private final LembreteService lembretes;
 
-    public PainelService(OrcamentoRepository orcamentos, EncomendaRepository encomendas, InscricaoRepository inscricoes,
+    public PainelService(LembreteService lembretes, OrcamentoRepository orcamentos, EncomendaRepository encomendas, InscricaoRepository inscricoes,
                          LancamentoRepository lancamentos, EncomendaService encomendaService,
                          FinanceiroService financeiro, OficinaService oficinas, MaterialService materiais) {
         this.orcamentos = orcamentos;
@@ -42,6 +43,7 @@ public class PainelService {
         this.financeiro = financeiro;
         this.oficinas = oficinas;
         this.materiais = materiais;
+        this.lembretes = lembretes;
     }
 
     @Transactional(readOnly = true)
@@ -86,7 +88,7 @@ public class PainelService {
 
         return new Painel(saudacao(), abertos, novos, emProducao, entregasSemana, totalAReceber, aReceber.size(), pix,
                 oficinas.proxima().orElse(null), semanas, FinanceiroService.percentuais(porFrente, totalMes),
-                proximas, materiais.abaixoDoMinimo(), nomeMes);
+                proximas, materiais.abaixoDoMinimo(), nomeMes, lembretes.quantidade());
     }
 
     private String saudacao() {

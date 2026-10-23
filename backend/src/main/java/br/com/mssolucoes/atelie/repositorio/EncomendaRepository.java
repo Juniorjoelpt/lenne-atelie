@@ -29,4 +29,13 @@ public interface EncomendaRepository extends JpaRepository<Encomenda, Long> {
     java.util.Optional<Encomenda> findFirstByOrcamentoId(Long orcamentoId);
 
     boolean existsByProdutoId(Long produtoId);
+
+    @EntityGraph(attributePaths = "cliente")
+    List<Encomenda> findByPrazoEntregaBetweenOrderByPrazoEntregaAsc(LocalDate de, LocalDate ate);
+
+    @EntityGraph(attributePaths = {"cliente", "produto"})
+    List<Encomenda> findByStatusAndEntregueEmBetween(StatusEncomenda status, LocalDate de, LocalDate ate);
+
+    @EntityGraph(attributePaths = "cliente")
+    List<Encomenda> findByStatusIn(Collection<StatusEncomenda> status);
 }

@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
+import { FormCompromisso } from './Agenda.jsx';
 import Icone from '../componentes/Icone.jsx';
 import { Campo, Confirmar, Estado, Modal, ModalForm, Selo, lerForm, useCarregar, useToast, Vazio } from '../componentes/ui.jsx';
 import { FORMAS, FRENTES, STATUS_ENCOMENDA, data, hojeIso, linkWhats, moeda, moedaUnit, qtd, qtdUn, telefone } from '../util.js';
@@ -11,8 +13,9 @@ const FILTROS = [['', 'Todas'], ['AGUARDANDO_SINAL', 'Aguardando sinal'], ['EM_P
 const PROXIMO = { AGUARDANDO_SINAL: 'EM_PRODUCAO', EM_PRODUCAO: 'PRONTA', PRONTA: 'ENTREGUE' };
 
 export default function Encomendas() {
+  const [params, setParams] = useSearchParams();
   const [filtro, setFiltro] = useState('');
-  const [aberta, setAberta] = useState(null);
+  const [aberta, setAberta] = useState(params.get('abrir') ? { id: Number(params.get('abrir')) } : null);
   const [form, setForm] = useState(null);
   const toast = useToast();
   const { dados, erro, carregando, recarregar } = useCarregar(
@@ -50,7 +53,7 @@ export default function Encomendas() {
         </Estado>
       </section>
 
-      {aberta && <Detalhe id={aberta.id} aoFechar={() => { setAberta(null); recarregar(); }}
+      {aberta && <Detalhe id={aberta.id} aoFechar={() => { setAberta(null); if (params.get('abrir')) setParams({}); recarregar(); }}
         aoEditar={(e) => { setAberta(null); setForm(e); }} />}
 
       {form && <FormEncomenda encomenda={form} aoFechar={() => setForm(null)} aoSalvar={() => { setForm(null); toast('Encomenda salva.'); recarregar(); }} />}
@@ -96,7 +99,16 @@ function Detalhe({ id, aoFechar, aoEditar }) {
   const [pagar, setPagar] = useState(false);
   const [confirmar, setConfirmar] = useState(null);
   const [falha, setFalha] = useState(null);
+  const [agendar, setAgendar] = useState(false);
+  const [gerando, setGerando] = useState(false);
   const toast = useToast();
+
+  async function contrato() {
+    setGerando(true);
+    try { toast(`${await api.baixar(`/api/encomendas/${id}/contrato`)} baixado.`); }
+    catch (err) { setFalha(err.message); }
+    finally { setGerando(false); }
+  }
 
   async function mudar(status) {
     try {
@@ -125,6 +137,10 @@ function Detalhe({ id, aoFechar, aoEditar }) {
       </ModalForm>
     );
   }
+  if (agendar && e) {
+    return <FormCompromisso compromisso={{ tipo: 'PRODUCAO', titulo: `Produzir: ${e.descricao}`.slice(0, 160), encomendaId: e.id, clienteId: e.clienteId, inicio: `${hojeIso()}T09:00` }}
+      aoFechar={() => setAgendar(false)} aoSalvar={() => setAgendar(false)} />;
+  }
   if (confirmar) {
     return <Confirmar titulo={confirmar === 'EXCLUIR' ? 'Excluir encomenda' : 'Cancelar encomenda'} perigo
       textoBotao={confirmar === 'EXCLUIR' ? 'Excluir' : 'Cancelar encomenda'}
@@ -141,6 +157,8 @@ function Detalhe({ id, aoFechar, aoEditar }) {
     <Modal titulo={e ? e.descricao : 'Encomenda'} aoFechar={aoFechar} largo rodape={e && <>
       {e.status !== 'CANCELADA' && e.status !== 'ENTREGUE' && <button type="button" className="btn btn-perigo" onClick={() => setConfirmar(Number(e.valorPago) > 0 ? 'CANCELAR' : 'EXCLUIR')}>{Number(e.valorPago) > 0 ? 'Cancelar' : 'Excluir'}</button>}
       <button type="button" className="btn btn-claro" onClick={() => aoEditar(e)}><Icone nome="editar" tamanho={18} />Editar</button>
+      <button type="button" className="btn btn-claro" onClick={contrato} disabled={gerando}><Icone nome="pdf" tamanho={18} />{gerando ? 'Gerando…' : 'Contrato'}</button>
+      {e.status !== 'CANCELADA' && e.status !== 'ENTREGUE' && <button type="button" className="btn btn-claro" onClick={() => setAgendar(true)}><Icone nome="calendario" tamanho={18} />Agendar</button>}
       {Number(e.saldo) > 0 && <button type="button" className="btn btn-claro" onClick={() => setPagar(true)}><Icone nome="dinheiro" tamanho={18} />Registrar pagamento</button>}
       {proximo && <button type="button" className="btn btn-terra" onClick={() => mudar(proximo)}>Marcar como {STATUS_ENCOMENDA[proximo][0].toLowerCase()}</button>}
     </>}>
@@ -167,6 +185,7 @@ function Detalhe({ id, aoFechar, aoEditar }) {
             </div>
             <Custos e={e} />
             <MateriaisUsados e={e} aoMudar={() => { recarregar(); }} />
+            <FotosEncomenda e={e} />
             <h3 style={{ fontSize: 18, margin: '24px 0 8px' }}>Pagamentos</h3>
             {!pagamentos?.length ? <p className="mudo forte">Nenhum pagamento registrado.</p> : (
               <ul className="lista-linhas">
@@ -288,4 +307,108 @@ function MateriaisUsados({ e, aoMudar }) {
       )}
     </section>
   );
+}
+
+const ROTULO_FOTO = { REFERENCIA: 'Referência', PRONTA: 'Peça pronta' };
+
+function FotosEncomenda({ e }) {
+  const fotos = useCarregar(() => api.get(`/api/encomendas/${e.id}/fotos`), [e.id]);
+  const [tipo, setTipo] = useState('REFERENCIA');
+  const [enviando, setEnviando] = useState(false);
+  const [aberta, setAberta] = useState(null);
+  const [erro, setErro] = useState(null);
+  const toast = useToast();
+
+  async function enviar(ev) {
+    const arquivos = [...ev.target.files];
+    ev.target.value = '';
+    if (!arquivos.length) return;
+    setErro(null);
+    setEnviando(true);
+    try {
+      for (const f of arquivos) {
+        if (f.size > 8 * 1024 * 1024) throw new Error(`${f.name} tem mais de 8 MB.`);
+        const fd = new FormData();
+        fd.append('foto', f);
+        fd.append('tipo', tipo);
+        await api.enviar(`/api/encomendas/${e.id}/fotos`, fd);
+      }
+      toast(arquivos.length === 1 ? 'Foto enviada.' : `${arquivos.length} fotos enviadas.`);
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setEnviando(false);
+      fotos.recarregar();
+    }
+  }
+
+  async function acao(fn, msg) {
+    setErro(null);
+    try { await fn(); toast(msg); setAberta(null); fotos.recarregar(); } catch (err) { setErro(err.message); }
+  }
+
+  return (
+    <section aria-labelledby={`fotos-${e.id}`} style={{ marginTop: 24 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <h3 id={`fotos-${e.id}`} style={{ fontSize: 18 }}>Fotos</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+          <div className="chips chips-p" role="group" aria-label="Tipo da foto">
+            {Object.entries(ROTULO_FOTO).map(([k, r]) => <button key={k} type="button" className="chip" aria-pressed={tipo === k} onClick={() => setTipo(k)}>{r}</button>)}
+          </div>
+          <label className="btn btn-claro btn-p botao-upload">
+            <Icone nome="foto" tamanho={16} />{enviando ? 'Enviando…' : 'Adicionar fotos'}
+            <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={enviar} disabled={enviando} aria-label="Escolher fotos" />
+          </label>
+        </div>
+      </div>
+      <p className="mudo" style={{ fontSize: 13, marginBottom: 8 }}>As fotos ficam só no sistema. Fotos da peça pronta podem ir para o portfólio do site com um toque.</p>
+      {erro && <div className="aviso aviso-erro" role="alert" style={{ marginBottom: 8 }}>{erro}</div>}
+      {!fotos.dados?.length ? <p className="mudo forte">{fotos.carregando ? 'Carregando…' : 'Nenhuma foto ainda. Guarde aqui a referência que a cliente mandou e a foto da peça pronta.'}</p> : (
+        <div className="fotos-grade">
+          {fotos.dados.map((f) => (
+            <figure key={f.id} className="foto-card">
+              <button type="button" className="moldura" style={{ border: 0, padding: 0, cursor: 'zoom-in' }} onClick={() => setAberta(f)} aria-label={`Ampliar foto ${ROTULO_FOTO[f.tipo]}`}>
+                <ImagemProtegida url={f.url} alt={f.legenda || ROTULO_FOTO[f.tipo]} />
+              </button>
+              <figcaption>
+                <span className={`selo ${f.tipo === 'PRONTA' ? 'selo-oliva' : 'selo-areia'}`}>{ROTULO_FOTO[f.tipo]}</span>
+                {f.portfolioItemId && <span className="selo selo-terra" style={{ marginLeft: 4 }}>no site</span>}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      )}
+      {aberta && (
+        <Modal titulo={ROTULO_FOTO[aberta.tipo]} aoFechar={() => setAberta(null)} largo rodape={<>
+          <button type="button" className="btn btn-perigo" onClick={() => acao(() => api.del(`/api/fotos/${aberta.id}`), 'Foto excluída.')}><Icone nome="lixo" tamanho={18} />Excluir</button>
+          {aberta.tipo === 'PRONTA' && !aberta.portfolioItemId && (
+            <button type="button" className="btn btn-terra" onClick={() => acao(() => api.post(`/api/fotos/${aberta.id}/publicar`, {}), 'Foto publicada no portfólio do site.')}>
+              <Icone nome="site" tamanho={18} />Publicar no portfólio
+            </button>
+          )}
+        </>}>
+          <div style={{ borderRadius: 20, overflow: 'hidden', background: 'var(--areia)' }}>
+            <ImagemProtegida url={aberta.url} alt={aberta.legenda || ROTULO_FOTO[aberta.tipo]} style={{ width: '100%', maxHeight: '65vh', objectFit: 'contain' }} />
+          </div>
+          {aberta.legenda && <p className="forte" style={{ marginTop: 10 }}>{aberta.legenda}</p>}
+          {aberta.portfolioItemId && <p className="mudo forte" style={{ marginTop: 10 }}>Esta foto já está no portfólio. Para tirar do site, use a tela Portfólio.</p>}
+        </Modal>
+      )}
+    </section>
+  );
+}
+
+/** <img> para fotos que exigem login: busca com o token e mostra a partir da memória. */
+function ImagemProtegida({ url, alt, style }) {
+  const [src, setSrc] = useState(null);
+  const [falhou, setFalhou] = useState(false);
+  useEffect(() => {
+    let vivo = true;
+    let criado = null;
+    api.imagem(url).then((u) => { criado = u; if (vivo) setSrc(u); else URL.revokeObjectURL(u); }).catch(() => vivo && setFalhou(true));
+    return () => { vivo = false; if (criado) URL.revokeObjectURL(criado); };
+  }, [url]);
+  if (falhou) return <span className="mudo" style={{ fontSize: 12 }}>não abriu</span>;
+  if (!src) return <span className="mudo" style={{ fontSize: 12 }}>…</span>;
+  return <img src={src} alt={alt} style={style} loading="lazy" />;
 }

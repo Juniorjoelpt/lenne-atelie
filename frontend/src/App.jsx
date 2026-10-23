@@ -14,6 +14,9 @@ import Portfolio from './admin/Portfolio.jsx';
 import Configuracoes from './admin/Configuracoes.jsx';
 import Produtos from './admin/Produtos.jsx';
 import Vendas from './admin/Vendas.jsx';
+import Agenda from './admin/Agenda.jsx';
+import Relatorios from './admin/Relatorios.jsx';
+import Lembretes from './admin/Lembretes.jsx';
 
 function Protegido({ children }) {
   return sessao.token() ? children : <Navigate to="/admin/entrar" replace />;
@@ -30,6 +33,9 @@ export default function App() {
         <Route path="encomendas" element={<Encomendas />} />
         <Route path="produtos" element={<Produtos />} />
         <Route path="vendas" element={<Vendas />} />
+        <Route path="agenda" element={<Agenda />} />
+        <Route path="relatorios" element={<Relatorios />} />
+        <Route path="lembretes" element={<Lembretes />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="oficinas" element={<Oficinas />} />
         <Route path="financeiro" element={<Financeiro />} />

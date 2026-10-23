@@ -12,6 +12,8 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
 
     Optional<Cliente> findFirstByWhatsapp(String whatsapp);
 
+    List<Cliente> findByAniversarioIsNotNull();
+
     @Query("""
             select c from Cliente c
             where (:busca is null or lower(c.nome) like lower(concat('%', :busca, '%'))

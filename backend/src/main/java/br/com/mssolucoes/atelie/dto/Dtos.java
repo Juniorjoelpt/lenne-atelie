@@ -52,11 +52,14 @@ public final class Dtos {
             @Size(max = 120) String cidade,
             LocalDate aniversario,
             TipoCliente tipo,
-            @Size(max = 4000) String observacoes) {
+            @Size(max = 4000) String observacoes,
+            @Size(max = 30) String documento,
+            @Size(max = 255) String endereco) {
     }
 
     public record ClienteResp(Long id, String nome, String whatsapp, String email, String cidade,
-                              LocalDate aniversario, TipoCliente tipo, String observacoes, LocalDateTime criadoEm) {
+                              LocalDate aniversario, TipoCliente tipo, String observacoes, LocalDateTime criadoEm,
+                              String documento, String endereco) {
     }
 
     public record ClienteDetalhe(ClienteResp cliente, List<OrcamentoResp> orcamentos, List<EncomendaResp> encomendas,
@@ -129,7 +132,7 @@ public final class Dtos {
                                 BigDecimal valorTotal, BigDecimal valorSinal,
                                 BigDecimal valorPago, BigDecimal saldo, LocalDate prazoEntrega,
                                 StatusEncomenda status, String observacoes, LocalDateTime criadoEm,
-                                CustosEncomenda custos) {
+                                CustosEncomenda custos, LocalDate entregueEm) {
     }
 
     /**
@@ -343,6 +346,94 @@ public final class Dtos {
                                int pecas, int quantidadeVendas, List<ValorPorNome> porCanal, List<VendaResp> vendas) {
     }
 
+    // ---------- Proposta e contrato ----------
+
+    public record DocumentosConfig(
+            @Size(max = 120) String responsavel,
+            @Size(max = 30) String documento,
+            @NotNull @PositiveOrZero @Max(value = 100, message = "O sinal vai de 0 a 100%.") BigDecimal sinalPercentual,
+            @NotNull @Min(value = 1, message = "Validade mínima de 1 dia.") @Max(value = 365) Integer validadePropostaDias,
+            @Size(max = 4000) String condicoesProposta,
+            @Size(max = 4000) String politicaCancelamento) {
+    }
+
+    // ---------- Agenda ----------
+
+    public record CompromissoReq(
+            @NotBlank(message = "Informe o título.") @Size(max = 160) String titulo,
+            TipoCompromisso tipo,
+            @NotNull(message = "Informe data e hora.") LocalDateTime inicio,
+            LocalDateTime fim,
+            @Size(max = 160) String local,
+            Long clienteId,
+            Long encomendaId,
+            @Size(max = 4000) String observacoes,
+            Boolean concluido) {
+    }
+
+    public record CompromissoResp(Long id, String titulo, TipoCompromisso tipo, LocalDateTime inicio,
+                                  LocalDateTime fim, String local, Long clienteId, String clienteNome,
+                                  Long encomendaId, String encomendaDescricao, String observacoes, boolean concluido) {
+    }
+
+    /**
+     * Item da agenda. tipo: ENTREGA, OFICINA, COMPROMISSO, ANIVERSARIO.
+     * hora vazia = o dia todo.
+     */
+    public record EventoAgenda(String tipo, Long id, LocalDate data, java.time.LocalTime hora, String titulo,
+                               String detalhe, String status, boolean concluido) {
+    }
+
+    // ---------- Lembretes ----------
+
+    /** Lembrete pronto para enviar pelo WhatsApp (a mensagem já vem escrita). */
+    public record LembreteResp(String chave, String tipo, String titulo, String detalhe, String nome,
+                               String whatsapp, String mensagem, LocalDate data) {
+    }
+
+    public record MarcarLembreteReq(@NotBlank @Size(max = 120) String chave) {
+    }
+
+    // ---------- Fotos da encomenda ----------
+
+    public record FotoResp(Long id, Long encomendaId, TipoFoto tipo, String legenda, String url,
+                           Long portfolioItemId, LocalDateTime criadoEm) {
+    }
+
+    public record PublicarFotoReq(@Size(max = 140) String titulo, CategoriaPortfolio categoria) {
+    }
+
+    // ---------- Relatórios ----------
+
+    public record Comparativo(BigDecimal atual, BigDecimal anterior, Integer variacaoPercentual) {
+    }
+
+    public record MesValores(String mes, BigDecimal entradas, BigDecimal saidas) {
+    }
+
+    /** Resultado das encomendas entregues, agrupadas pela ficha técnica. */
+    public record LinhaPeca(String nome, int pecas, BigDecimal faturamento, BigDecimal materiais,
+                            BigDecimal ganho, BigDecimal horas, BigDecimal ganhoPorHora) {
+    }
+
+    public record LinhaVenda(String nome, int pecas, BigDecimal faturamento, BigDecimal custo, BigDecimal sobra) {
+    }
+
+    public record LinhaRanking(String nome, int pecas, int emEncomendas, int emVendas, BigDecimal faturamento) {
+    }
+
+    public record LinhaMaterial(String nome, String unidade, BigDecimal quantidade, BigDecimal custo) {
+    }
+
+    public record Relatorio(LocalDate de, LocalDate ate, LocalDate deAnterior, LocalDate ateAnterior,
+                            Comparativo entradas, Comparativo saidas, Comparativo resultado,
+                            int encomendasEntregues, BigDecimal ticketMedio, int oficinas, int alunas,
+                            List<MesValores> evolucao, List<ValorPorNome> porFrente, List<LinhaPeca> porPeca,
+                            List<LinhaVenda> prontaEntrega, BigDecimal descontosVendas,
+                            List<LinhaRanking> maisVendidos, List<LinhaMaterial> materiais,
+                            List<LancamentoResp> lancamentos) {
+    }
+
     // ---------- Portfólio ----------
 
     public record PortfolioResp(Long id, String titulo, CategoriaPortfolio categoria, String url, int ordem,
@@ -378,6 +469,7 @@ public final class Dtos {
             List<ValorPorNome> receitaPorFrente,
             List<EncomendaResp> proximasEntregas,
             List<MaterialResp> materiaisBaixos,
-            String mesReferencia) {
+            String mesReferencia,
+            int lembretes) {
     }
 }

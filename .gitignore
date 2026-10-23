@@ -1,6 +1,7 @@
 .env
 backend/target/
 backend/uploads/
+backend/uploads-privados/
 backend/src/main/resources/static/
 frontend/node_modules/
 frontend/dist/

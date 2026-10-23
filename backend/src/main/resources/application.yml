@@ -3,7 +3,8 @@ server:
   servlet:
     encoding:
       charset: UTF-8
-      force: true
+      # Só nas requisições: forçar nas respostas acrescentaria charset em imagens e PDFs
+      force-request: true
 
 spring:
   application:
@@ -42,4 +43,6 @@ atelie:
     email: ${ADMIN_EMAIL:lenne@atelie.local}
     senha: ${ADMIN_SENHA:trocar123}
   uploads-dir: ${UPLOADS_DIR:./uploads}
+  # Fotos das encomendas: fora da pasta pública, só abrem com login
+  uploads-privados-dir: ${UPLOADS_PRIVADOS_DIR:./uploads-privados}
   cors-origens: ${CORS_ORIGENS:http://localhost:5173}

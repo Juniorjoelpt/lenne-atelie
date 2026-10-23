@@ -32,6 +32,11 @@ public final class Enums {
 
     public enum StatusVenda { CONCLUIDA, CANCELADA }
 
+    public enum TipoCompromisso { VISITA, PROVA, REUNIAO, PRODUCAO, COMPRA, OUTRO }
+
+    /** Referência = o que a cliente mandou; pronta = foto da peça terminada. */
+    public enum TipoFoto { REFERENCIA, PRONTA }
+
     public enum FormaPagamento { PIX, DINHEIRO, CARTAO, OUTRO }
 
     public enum CategoriaPortfolio { DECORACAO, CASAMENTOS, PRESENTES, OFICINAS }

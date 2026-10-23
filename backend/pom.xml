@@ -69,6 +69,18 @@
             <version>${jjwt.version}</version>
             <scope>runtime</scope>
         </dependency>
+        <!-- PDF (proposta, contrato, relatório) -->
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>2.0.3</version>
+        </dependency>
+        <!-- Excel (exportação dos relatórios) -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.3.0</version>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

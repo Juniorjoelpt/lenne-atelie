@@ -43,6 +43,28 @@ Desenvolvido pela MS Soluções Inteligentes.
 
 O estoque de material pode ficar negativo; nesse caso aparece como "registre a compra". Assim a produção nunca fica travada por um cadastro desatualizado.
 
+### Relatórios, documentos, agenda, lembretes e fotos
+
+- **Relatórios:** período livre ou atalhos (este mês, mês passado, 3 meses, ano).
+  - Mostra entradas, saídas e resultado, comparados com o mesmo trecho do período anterior.
+  - Traz um gráfico de 12 meses, as entradas por frente, quanto rendeu cada peça entregue (ganho e valor por hora frente à meta), a pronta-entrega, os mais vendidos e os materiais mais usados.
+  - Exporta em **Excel** (uma aba por assunto, mais todos os lançamentos) e em **PDF**.
+- **Proposta em PDF:** gerada no orçamento, com a marca do ateliê, valor, sinal, condições, validade e chave Pix.
+- **Contrato em PDF:** gerado na encomenda, com as partes, objeto, valor e pagamentos, prazo, regras de cancelamento e assinaturas.
+  - Os textos são editáveis em Configurações › Proposta e contrato.
+  - O CPF/CNPJ e o endereço da cliente ficam no cadastro dela. Se faltarem, o contrato sai com espaço para preencher à mão.
+- **Agenda:** calendário do mês com entregas, oficinas, compromissos (visitas técnicas, provas, dias de produção, compras) e aniversários de clientes. No celular, vira pontinhos coloridos e a lista do dia.
+- **Lembretes de WhatsApp:** o sistema escreve a mensagem e ela só confere e envia (link wa.me), depois marca "Já enviei". Os tipos:
+  - oficina hoje ou amanhã, para as confirmadas;
+  - Pix pendente de oficina;
+  - peça pronta;
+  - entrega amanhã;
+  - saldo em aberto (volta depois de 7 dias);
+  - aniversário.
+- **Fotos da encomenda:** referência da cliente e peça pronta.
+  - Ficam numa pasta **privada**, fora do site, e só abrem com login.
+  - A foto da peça pronta vai para o portfólio com um toque: o sistema faz uma cópia pública. A referência nunca vai, porque costuma ser imagem de outra pessoa.
+
 ## Rodar no computador (Windows + NetBeans)
 
 **Pré-requisitos:**
@@ -92,7 +114,7 @@ O estoque de material pode ficar negativo; nesse caso aparece como "registre a c
    ```
    Depois rode: `certbot --nginx -d lennecarvalhoatelie.com.br -d www.lennecarvalhoatelie.com.br`
 
-**Backups.** O banco fica no volume `banco` e as fotos no volume `uploads`. Para um backup do banco:
+**Backups.** O banco fica no volume `banco`, as fotos do site no volume `uploads` e as fotos privadas das encomendas no volume `privado`. Para um backup do banco:
 ```
 docker compose exec banco sh -c 'mysqldump -u root -p"$MYSQL_ROOT_PASSWORD" lenne_atelie' > backup.sql
 ```
@@ -113,6 +135,10 @@ Os testes cobrem:
 - cálculo da ficha técnica e do preço sugerido
 - baixa automática de materiais e lucro da encomenda
 - venda de pronta-entrega e cancelamento
+- relatório com números conferidos à mão, Excel e PDF
+- proposta e contrato em PDF
+- agenda e lembretes
+- fotos privadas e publicação no portfólio
 
 ## Atualizar a VPS
 
