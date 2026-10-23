@@ -8,3 +8,6 @@ frontend/dist/
 .idea/
 nbproject/
 *.log
+
+# Configuração local de cada computador (senha do MySQL etc.)
+backend/config/

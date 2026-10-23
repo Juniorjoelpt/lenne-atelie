@@ -83,6 +83,13 @@ O estoque de material pode ficar negativo; nesse caso aparece como "registre a c
 2. No NetBeans, abra a pasta `backend` (projeto Maven) e rode `AtelieApplication`.
    - O banco `lenne_atelie` é criado sozinho, e o Flyway cria as tabelas.
    - Se sua senha do MySQL não for `root`, defina a variável `DB_PASSWORD`.
+   - **Configuração só do seu computador** (senha do MySQL, porta…): não altere o `application.yml` do projeto. Crie `backend/config/application.yml` só com o que muda, por exemplo:
+     ```yaml
+     spring:
+       datasource:
+         password: minha-senha
+     ```
+     O Spring lê esse arquivo por cima do padrão, e o Git ignora a pasta. Assim o `git pull` nunca entra em conflito.
 3. Acesse:
    - Site: http://localhost:8080
    - Sistema: http://localhost:8080/admin
