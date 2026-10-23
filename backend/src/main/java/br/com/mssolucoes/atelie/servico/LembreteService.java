@@ -44,11 +44,13 @@ public class LembreteService {
     private final ClienteRepository clientes;
     private final ConfiguracaoService configuracao;
     private final UrlPublica url;
+    private final MatriculaRepository matriculas;
 
     public LembreteService(LembreteRepository repo, InscricaoRepository inscricoes, EncomendaRepository encomendas,
                            LancamentoRepository lancamentos, ClienteRepository clientes,
-                           ConfiguracaoService configuracao, UrlPublica url) {
+                           ConfiguracaoService configuracao, UrlPublica url, MatriculaRepository matriculas) {
         this.url = url;
+        this.matriculas = matriculas;
         this.repo = repo;
         this.inscricoes = inscricoes;
         this.encomendas = encomendas;
@@ -139,6 +141,31 @@ public class LembreteService {
                                 + moeda(saldo) + " da sua encomenda (" + e.getDescricao() + ")."
                                 + (cfg.getChavePix() != null ? " Pode ser pelo Pix " + cfg.getChavePix() + "." : "")
                                 + " Obrigada! " + assinatura(cfg), hoje));
+            }
+        }
+
+        // Cursos online: mandar o link de acesso depois de liberar; lembrar do Pix de quem só se inscreveu
+        for (Matricula m : matriculas.findByStatusInOrderByCriadoEmAsc(EnumSet.of(
+                br.com.mssolucoes.atelie.dominio.Enums.StatusMatricula.LIBERADA,
+                br.com.mssolucoes.atelie.dominio.Enums.StatusMatricula.AGUARDANDO_PIX))) {
+            Curso curso = m.getCurso();
+            if (m.getStatus() == br.com.mssolucoes.atelie.dominio.Enums.StatusMatricula.LIBERADA) {
+                if (m.getLiberadaEm() != null && !m.getLiberadaEm().toLocalDate().isBefore(hoje.minusDays(30))) {
+                    todos.add(new LembreteResp("ACESSO:" + m.getId(), "ACESSO", "Acesso ao curso: " + curso.getTitulo(),
+                            "Liberado em " + DIA.format(m.getLiberadaEm().toLocalDate()), m.getNome(), m.getWhatsapp(),
+                            "Oi, " + primeiro(m.getNome()) + "! Seu acesso ao curso \"" + curso.getTitulo()
+                                    + "\" está liberado. É só abrir este link (guarde, ele é só seu): "
+                                    + url.base() + "/meu-curso/" + m.getCodigo()
+                                    + " Qualquer dúvida nas aulas, me chama aqui. Bons nós! " + assinatura(cfg),
+                            m.getLiberadaEm().toLocalDate()));
+                }
+            } else if (m.getCriadoEm().toLocalDate().isBefore(hoje) && !m.getCriadoEm().toLocalDate().isBefore(hoje.minusDays(15))) {
+                todos.add(new LembreteResp("PIXCURSO:" + m.getId(), "PIX", "Pix pendente: curso " + curso.getTitulo(),
+                        "Inscrição em " + DIA.format(m.getCriadoEm().toLocalDate()), m.getNome(), m.getWhatsapp(),
+                        "Oi, " + primeiro(m.getNome()) + "! Vi que você se inscreveu no curso online \""
+                                + curso.getTitulo() + "\", mas ainda não recebi o Pix de " + moeda(curso.getValor()) + "."
+                                + (cfg.getChavePix() != null ? " A chave é " + cfg.getChavePix() + "." : "")
+                                + " Assim que eu confirmar, te mando o link das aulas. " + assinatura(cfg), hoje));
             }
         }
 

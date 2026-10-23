@@ -30,10 +30,12 @@ public class ProdutoService {
     private final ConsumoMaterialRepository consumos;
     private final ConsumoService consumoService;
     private final PrecificacaoService precificacao;
+    private final ArmazenamentoService armazenamento;
 
     public ProdutoService(ProdutoRepository repo, MaterialRepository materiais, EncomendaRepository encomendas,
                           VendaRepository vendas, ConsumoMaterialRepository consumos, ConsumoService consumoService,
-                          PrecificacaoService precificacao) {
+                          PrecificacaoService precificacao, ArmazenamentoService armazenamento) {
+        this.armazenamento = armazenamento;
         this.repo = repo;
         this.materiais = materiais;
         this.encomendas = encomendas;
@@ -76,6 +78,7 @@ public class ProdutoService {
                     + "Desmarque \"Ativa\" para tirá-la das listas sem perder o histórico.");
         }
         repo.delete(p);
+        p.getFotos().forEach(f -> armazenamento.excluir(f.getArquivo()));
     }
 
     /** Peças de pronta-entrega que ficaram prontas: soma no estoque e baixa os materiais. */
@@ -136,6 +139,12 @@ public class ProdutoService {
         }).toList();
         return new ProdutoResp(p.getId(), p.getNome(), p.getDescricao(), p.getFrente(), p.getHorasMaoObra(),
                 p.getOutrosCustos(), p.getMargem(), p.getPrecoVenda(), p.isProntaEntrega(), p.getEstoque(),
-                p.isAtivo(), itens, precificacao.calcular(p, par));
+                p.isAtivo(), itens, precificacao.calcular(p, par), catalogo(p));
+    }
+
+    public static CatalogoInfo catalogo(Produto p) {
+        return new CatalogoInfo(p.isNoCatalogo(), p.isMostrarPreco(), p.getTextoCatalogo(), p.getPrazoProducao(),
+                p.getOrdemCatalogo(), p.getFotos().stream()
+                .map(f -> new FotoProdutoResp(f.getId(), "/uploads/" + f.getArquivo(), f.getOrdem())).toList());
     }
 }

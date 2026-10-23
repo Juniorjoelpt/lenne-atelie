@@ -23,7 +23,7 @@ public final class Enums {
 
     public enum TipoLancamento { ENTRADA, SAIDA }
 
-    public enum CategoriaLancamento { ENCOMENDA, CASAMENTO, PRESENTE, OFICINA, VENDA, MATERIAL, CONTAS_FIXAS, OUTROS }
+    public enum CategoriaLancamento { ENCOMENDA, CASAMENTO, PRESENTE, OFICINA, CURSO, VENDA, MATERIAL, CONTAS_FIXAS, OUTROS }
 
     /** De onde veio a saída de material. */
     public enum OrigemConsumo { FICHA_ENCOMENDA, MANUAL_ENCOMENDA, PRODUCAO_ESTOQUE }
@@ -36,6 +36,8 @@ public final class Enums {
 
     /** Referência = o que a cliente mandou; pronta = foto da peça terminada. */
     public enum TipoFoto { REFERENCIA, PRONTA }
+
+    public enum StatusMatricula { AGUARDANDO_PIX, A_CONFERIR, LIBERADA, CANCELADA }
 
     public enum StatusCompra { CONCLUIDA, CANCELADA }
 

@@ -92,6 +92,21 @@ O estoque de material pode ficar negativo; nesse caso aparece como "registre a c
   - Alguns dias depois de uma entrega quitada, os lembretes sugerem pedir um depoimento à cliente.
   - Os depoimentos "Exemplo — …" do banco de testes são só para ver o visual: apague antes de publicar o site.
 
+### Cursos online e catálogo
+
+- **Cursos online (menu Cursos online):** curso gravado com aulas em vídeo.
+  - Os vídeos ficam no YouTube (como "não listado"), no Vimeo ou no Google Drive. A Lenne só cola o link, e o sistema transforma em player. Links de outros sites são recusados.
+  - Cada curso tem capa, resumo, descrição, nível, lista de materiais, ordem das aulas e aulas abertas como amostra.
+  - No site, a aluna se inscreve e vê a chave Pix. Depois de "Enviar comprovante", a inscrição fica como "Pix a conferir" (contador no menu).
+  - "Confirmar Pix e liberar" cadastra a cliente, lança a entrada em "Cursos online" no financeiro e libera o acesso. O lembrete do dia traz a mensagem com o link, e também há o botão "Enviar acesso".
+  - A aluna assiste pelo link `/meu-curso/<código>`, sem senha, e marca as aulas concluídas. A Lenne vê o progresso de cada uma.
+  - Os links dos vídeos só saem do servidor para quem tem o curso liberado (ou nas aulas abertas). Um vídeo não listado ainda pode ser repassado por quem tem o link; para conteúdo mais protegido, use o Vimeo com restrição de domínio.
+  - Curso com valor zero é liberado na hora. Cancelar a inscrição desativa o link; voltar a liberação tira a entrada do financeiro.
+- **Catálogo (Produtos › botão Catálogo):** a peça da ficha técnica aparece no site em `/catalogo` e numa seção da página inicial.
+  - Tem texto para a cliente, até 8 fotos (a primeira é a capa), prazo de produção, ordem, e preço ou "sob consulta".
+  - O preço é o que ela cobra: peça de pronta-entrega mostra o valor e as unidades disponíveis; peça sob encomenda mostra "a partir de".
+  - O botão abre o WhatsApp já com o nome da peça. Custos e materiais nunca vão para o site.
+
 ## Rodar no computador (Windows + NetBeans)
 
 **Pré-requisitos:**
@@ -178,6 +193,9 @@ Os testes cobrem:
 - certificados (aluna, turma e link público)
 - acesso de ajudante sem valores e com rotas bloqueadas
 - depoimentos com foto no site e lembrete de pedir depoimento
+- links de vídeo aceitos e recusados
+- curso vendido pelo site, liberação, progresso, lembrete de acesso e cancelamento
+- catálogo com fotos, ordem, preço ou sob consulta, sem custos
 
 ## Atualizar a VPS
 
@@ -186,7 +204,7 @@ git pull
 docker compose up -d --build
 ```
 
-O Flyway aplica sozinho as mudanças no banco, como a V4 desta etapa, sem apagar dados.
+O Flyway aplica sozinho as mudanças no banco, como a V5 desta etapa, sem apagar dados.
 
 ## Segurança
 

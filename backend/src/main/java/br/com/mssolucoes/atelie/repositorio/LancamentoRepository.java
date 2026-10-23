@@ -28,6 +28,13 @@ public interface LancamentoRepository extends JpaRepository<Lancamento, Long> {
 
     void deleteByCompraId(Long compraId);
 
+    void deleteByMatriculaId(Long matriculaId);
+
+    boolean existsByMatriculaId(Long matriculaId);
+
+    @Query("select coalesce(sum(l.valor), 0) from Lancamento l where l.matricula.curso.id = :cursoId")
+    BigDecimal receitaCurso(@Param("cursoId") Long cursoId);
+
     boolean existsByCompraId(Long compraId);
 
     boolean existsByContaFixaId(Long contaFixaId);

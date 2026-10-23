@@ -63,6 +63,10 @@ public class Lancamento {
     @JoinColumn(name = "conta_fixa_id")
     private ContaFixa contaFixa;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "matricula_id")
+    private Matricula matricula;
+
     /** Mês a que o pagamento da conta fixa se refere (sempre dia 1). */
     private LocalDate competencia;
 

@@ -25,11 +25,17 @@ public class PublicoController {
     private final LimitadorDeRequisicoes limitador;
     private final br.com.mssolucoes.atelie.servico.DepoimentoService depoimentos;
     private final br.com.mssolucoes.atelie.servico.CertificadoService certificados;
+    private final br.com.mssolucoes.atelie.servico.CursoService cursos;
+    private final br.com.mssolucoes.atelie.servico.CatalogoService catalogo;
 
     public PublicoController(ConfiguracaoService configuracao, OficinaService oficinas, PortfolioService portfolio,
                              OrcamentoService orcamentos, LimitadorDeRequisicoes limitador,
                              br.com.mssolucoes.atelie.servico.DepoimentoService depoimentos,
-                             br.com.mssolucoes.atelie.servico.CertificadoService certificados) {
+                             br.com.mssolucoes.atelie.servico.CertificadoService certificados,
+                             br.com.mssolucoes.atelie.servico.CursoService cursos,
+                             br.com.mssolucoes.atelie.servico.CatalogoService catalogo) {
+        this.cursos = cursos;
+        this.catalogo = catalogo;
         this.depoimentos = depoimentos;
         this.certificados = certificados;
         this.configuracao = configuracao;
@@ -42,7 +48,45 @@ public class PublicoController {
     @GetMapping("/site")
     public SitePublico site() {
         return new SitePublico(configuracao.dto(), oficinas.abertasNoSite(), portfolio.publicados(),
-                depoimentos.publicados());
+                depoimentos.publicados(), cursos.publicados(), catalogo.publico());
+    }
+
+    @GetMapping("/catalogo")
+    public java.util.List<ItemCatalogo> catalogo() {
+        return catalogo.publico();
+    }
+
+    @GetMapping("/cursos/{id}")
+    public CursoPublico curso(@PathVariable Long id) {
+        return cursos.publicado(id);
+    }
+
+    @PostMapping("/cursos/{id}/matriculas")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MatriculaPublicaResp comprarCurso(@PathVariable Long id, @Valid @RequestBody MatriculaPublicaReq r,
+                                             HttpServletRequest req) {
+        limitador.verificar(req, "matricula", 5, 60 * 60);
+        return cursos.comprarPeloSite(id, r);
+    }
+
+    /** Área da aluna, aberta pelo link com o código da matrícula. */
+    @GetMapping("/matriculas/{codigo}")
+    public AreaAluna areaDaAluna(@PathVariable String codigo, HttpServletRequest req) {
+        limitador.verificar(req, "area-aluna", 300, 60 * 60);
+        return cursos.areaDaAluna(codigo);
+    }
+
+    @PostMapping("/matriculas/{codigo}/comprovante-enviado")
+    public AreaAluna comprovanteCurso(@PathVariable String codigo, HttpServletRequest req) {
+        limitador.verificar(req, "comprovante", 20, 60 * 60);
+        return cursos.avisarComprovante(codigo);
+    }
+
+    @PutMapping("/matriculas/{codigo}/aulas/{aulaId}")
+    public AreaAluna concluirAula(@PathVariable String codigo, @PathVariable Long aulaId,
+                                  @RequestParam(defaultValue = "true") boolean concluida, HttpServletRequest req) {
+        limitador.verificar(req, "progresso", 300, 60 * 60);
+        return cursos.marcarAula(codigo, aulaId, concluida);
     }
 
     @PostMapping("/orcamentos")

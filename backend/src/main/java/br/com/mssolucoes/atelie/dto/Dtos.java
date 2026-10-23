@@ -231,7 +231,7 @@ public final class Dtos {
     public record LancamentoResp(Long id, TipoLancamento tipo, CategoriaLancamento categoria, String descricao,
                                  BigDecimal valor, LocalDate data, FormaPagamento formaPagamento,
                                  Long encomendaId, Long inscricaoId, Long vendaId, Long compraId, Long contaFixaId,
-                                 boolean automatico) {
+                                 Long matriculaId, boolean automatico) {
     }
 
     public record ValorPorNome(String nome, BigDecimal valor, int percentual) {
@@ -315,7 +315,8 @@ public final class Dtos {
 
     public record ProdutoResp(Long id, String nome, String descricao, Frente frente, BigDecimal horasMaoObra,
                               BigDecimal outrosCustos, BigDecimal margem, BigDecimal precoVenda, boolean prontaEntrega,
-                              int estoque, boolean ativo, List<ItemFichaResp> materiais, CustoFicha custo) {
+                              int estoque, boolean ativo, List<ItemFichaResp> materiais, CustoFicha custo,
+                              CatalogoInfo catalogo) {
     }
 
     public record ProducaoReq(@NotNull @Min(value = 1, message = "Informe quantas peças ficaram prontas.") Integer quantidade) {
@@ -457,7 +458,7 @@ public final class Dtos {
     // ---------- Site e painel ----------
 
     public record SitePublico(ConfiguracaoDto atelie, List<OficinaPublica> oficinas, List<PortfolioResp> portfolio,
-                              List<DepoimentoResp> depoimentos) {
+                              List<DepoimentoResp> depoimentos, List<CursoPublico> cursos, List<ItemCatalogo> catalogo) {
     }
 
     public record Barra(String rotulo, BigDecimal valor) {
@@ -613,5 +614,103 @@ public final class Dtos {
 
     public record DepoimentoResp(Long id, String nome, String contexto, String texto, int estrelas, String foto,
                                  boolean publicado, int ordem) {
+    }
+
+    // ---------- Cursos online ----------
+
+    public record CursoReq(
+            @NotBlank(message = "Informe o título do curso.") @Size(max = 140) String titulo,
+            @Size(max = 220, message = "Resumo de até 220 caracteres.") String resumo,
+            @Size(max = 8000) String descricao,
+            @NotNull(message = "Informe o valor.") @PositiveOrZero BigDecimal valor,
+            @Size(max = 40) String nivel,
+            @Size(max = 4000) String materiais,
+            Boolean publicado,
+            Integer ordem) {
+    }
+
+    public record AulaReq(
+            @NotBlank(message = "Informe o título da aula.") @Size(max = 160) String titulo,
+            @Size(max = 4000) String descricao,
+            @Size(max = 500) String videoUrl,
+            @Min(value = 1, message = "Duração mínima de 1 minuto.") @Max(value = 600, message = "Duração acima de 10 horas.") Integer duracaoMinutos,
+            Boolean gratuita) {
+    }
+
+    public record AulaResp(Long id, String titulo, String descricao, String videoUrl, String videoEmbed,
+                           Integer duracaoMinutos, boolean gratuita, int ordem) {
+    }
+
+    public record CursoResp(Long id, String titulo, String resumo, String descricao, String capa, BigDecimal valor,
+                            String nivel, String materiais, boolean publicado, int ordem, List<AulaResp> aulas,
+                            int duracaoTotal, long liberadas, long pendentes, BigDecimal receita) {
+    }
+
+    public record OrdemReq(@NotEmpty(message = "Informe a nova ordem.") List<Long> ids) {
+    }
+
+    public record MatriculaReq(
+            @NotBlank(message = "Informe o nome.") @Size(max = 140) String nome,
+            @NotBlank(message = "Informe o WhatsApp.") @Size(max = 20) String whatsapp,
+            @Email(message = "E-mail inválido.") @Size(max = 160) String email,
+            StatusMatricula status) {
+    }
+
+    public record MatriculaResp(Long id, Long cursoId, String curso, Long clienteId, String nome, String whatsapp,
+                                String email, StatusMatricula status, Origem origem, String codigo,
+                                int aulasConcluidas, int totalAulas, LocalDateTime liberadaEm, LocalDateTime criadoEm) {
+    }
+
+    public record StatusMatriculaReq(
+            @NotNull(message = "Informe o status.") StatusMatricula status,
+            FormaPagamento formaPagamento) {
+    }
+
+    /** videoEmbed só vem preenchido em aula gratuita ou para quem tem o curso liberado. */
+    public record AulaPublica(Long id, String titulo, String descricao, Integer duracaoMinutos, boolean gratuita,
+                              String videoEmbed, boolean concluida) {
+    }
+
+    public record CursoPublico(Long id, String titulo, String resumo, String descricao, String capa, BigDecimal valor,
+                               String nivel, String materiais, int totalAulas, int duracaoTotal,
+                               List<AulaPublica> aulas) {
+    }
+
+    public record MatriculaPublicaReq(
+            @NotBlank(message = "Informe seu nome.") @Size(max = 140) String nome,
+            @NotBlank(message = "Informe seu WhatsApp.") @Size(max = 20) String whatsapp,
+            @Email(message = "E-mail inválido.") @Size(max = 160) String email,
+            String site) {
+    }
+
+    public record MatriculaPublicaResp(String codigo, StatusMatricula status, String curso, BigDecimal valor,
+                                       String chavePix, String titularPix, String whatsappAtelie) {
+    }
+
+    /** Página da aluna (pelo link): aulas com vídeo quando liberado, progresso e Pix se ainda faltar pagar. */
+    public record AreaAluna(String nome, StatusMatricula status, CursoPublico curso, int concluidas,
+                            BigDecimal valor, String chavePix, String titularPix, String whatsappAtelie) {
+    }
+
+    // ---------- Catálogo ----------
+
+    public record CatalogoReq(
+            Boolean noCatalogo,
+            Boolean mostrarPreco,
+            @Size(max = 2000, message = "Texto de até 2000 caracteres.") String textoCatalogo,
+            @Size(max = 80) String prazoProducao,
+            Integer ordemCatalogo) {
+    }
+
+    public record FotoProdutoResp(Long id, String url, int ordem) {
+    }
+
+    public record CatalogoInfo(boolean noCatalogo, boolean mostrarPreco, String textoCatalogo, String prazoProducao,
+                               int ordemCatalogo, List<FotoProdutoResp> fotos) {
+    }
+
+    /** Peça como aparece no site. preco vazio = "sob consulta". Nunca leva custos. */
+    public record ItemCatalogo(Long id, String nome, String texto, Frente frente, BigDecimal preco,
+                               boolean prontaEntrega, int disponiveis, String prazoProducao, List<String> fotos) {
     }
 }

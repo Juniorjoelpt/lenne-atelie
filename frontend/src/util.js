@@ -91,7 +91,7 @@ export const TIPOS_CLIENTE = { CLIENTE: 'Cliente', NOIVA: 'Noiva', PARCEIRO: 'Pa
 
 export const CATEGORIAS_LANC = {
   ENCOMENDA: 'Encomendas', CASAMENTO: 'Casamentos', PRESENTE: 'Presentes',
-  OFICINA: 'Oficinas', VENDA: 'Pronta-entrega', MATERIAL: 'Materiais', CONTAS_FIXAS: 'Contas fixas', OUTROS: 'Outros',
+  OFICINA: 'Oficinas', CURSO: 'Cursos online', VENDA: 'Pronta-entrega', MATERIAL: 'Materiais', CONTAS_FIXAS: 'Contas fixas', OUTROS: 'Outros',
 };
 
 export const CANAIS = { ATELIE: 'Ateliê', FEIRA: 'Feira', INSTAGRAM: 'Instagram', WHATSAPP: 'WhatsApp', OUTRO: 'Outro' };

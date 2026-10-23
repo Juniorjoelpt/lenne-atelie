@@ -13,6 +13,7 @@ const TIPOS = {
   SALDO: ['Saldo em aberto', 'ocre', 'dinheiro'],
   ANIVERSARIO: ['Aniversário', 'areia', 'cliente'],
   CERTIFICADO: ['Certificado', 'oliva', 'certificado'],
+  ACESSO: ['Acesso ao curso', 'oliva', 'video'],
   DEPOIMENTO: ['Pedir depoimento', 'terra', 'aspas'],
 };
 

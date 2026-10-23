@@ -103,7 +103,7 @@ export default function Financeiro() {
                               <button type="button" className="btn btn-fantasma btn-icone btn-p" aria-label="Excluir" onClick={() => setExcluir(l)}><Icone nome="lixo" tamanho={18} /></button>
                             </>}
                             {l.encomendaId && <span className="mudo" style={{ fontSize: 13 }}>encomenda</span>}
-                            {l.automatico && <span className="mudo" style={{ fontSize: 13 }}>{l.vendaId ? 'venda' : l.compraId ? 'compra' : l.contaFixaId ? 'conta fixa' : 'oficina'}</span>}
+                            {l.automatico && <span className="mudo" style={{ fontSize: 13 }}>{l.vendaId ? 'venda' : l.compraId ? 'compra' : l.contaFixaId ? 'conta fixa' : l.matriculaId ? 'curso' : 'oficina'}</span>}
                           </td>
                         </tr>
                       ))}

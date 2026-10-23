@@ -13,6 +13,7 @@ const MENU = [
   ['/admin/vendas', 'sacola', 'Vendas', false, true],
   ['/admin/agenda', 'calendario', 'Agenda', false, true],
   ['/admin/oficinas', 'oficina', 'Oficinas', false, true],
+  ['/admin/cursos', 'video', 'Cursos online'],
   ['/admin/clientes', 'cliente', 'Clientes'],
   ['/admin/financeiro', 'financeiro', 'Financeiro'],
   ['/admin/relatorios', 'grafico', 'Relatórios'],
@@ -24,6 +25,7 @@ const MENU = [
 export default function Layout() {
   const [aberto, setAberto] = useState(false);
   const [pix, setPix] = useState(0);
+  const [pixCursos, setPixCursos] = useState(0);
   const [lembretes, setLembretes] = useState(0);
   const local = useLocation();
   const ir = useNavigate();
@@ -46,6 +48,7 @@ export default function Layout() {
     setAberto(false);
     if (ajudante) return;
     api.get('/api/inscricoes/pix-a-conferir').then((l) => setPix(l.length)).catch(() => {});
+    api.get('/api/matriculas/pendentes').then((l) => setPixCursos(l.length)).catch(() => {});
     api.get('/api/lembretes').then((l) => setLembretes(l.length)).catch(() => {});
   }, [local.pathname, ajudante]);
 
@@ -68,6 +71,7 @@ export default function Layout() {
             <NavLink key={para} to={para} end={fim}>
               <Icone nome={icone} />{rotulo}
               {para === '/admin/oficinas' && pix > 0 && <span className="contador" aria-label={`${pix} Pix a conferir`}>{pix}</span>}
+              {para === '/admin/cursos' && pixCursos > 0 && <span className="contador" aria-label={`${pixCursos} Pix de cursos a conferir`}>{pixCursos}</span>}
             </NavLink>
           ))}
         </nav>

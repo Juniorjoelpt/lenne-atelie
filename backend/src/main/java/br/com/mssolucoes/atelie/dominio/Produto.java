@@ -62,6 +62,30 @@ public class Produto {
     @OrderBy("id")
     private List<ProdutoMaterial> materiais = new ArrayList<>();
 
+    // ---- Catálogo do site ----
+
+    @Column(name = "no_catalogo", nullable = false)
+    private boolean noCatalogo;
+
+    /** Falso = o site mostra "sob consulta". */
+    @Column(name = "mostrar_preco", nullable = false)
+    private boolean mostrarPreco = true;
+
+    /** Texto para a cliente (a descrição da ficha é interna). */
+    @Column(name = "texto_catalogo", columnDefinition = "TEXT")
+    private String textoCatalogo;
+
+    /** "Até 15 dias", "1 semana"… */
+    @Column(name = "prazo_producao", length = 80)
+    private String prazoProducao;
+
+    @Column(name = "ordem_catalogo", nullable = false)
+    private int ordemCatalogo;
+
+    @OneToMany(mappedBy = "produto", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("ordem, id")
+    private List<ProdutoFoto> fotos = new ArrayList<>();
+
     @Column(name = "criado_em", nullable = false)
     private LocalDateTime criadoEm = LocalDateTime.now();
 }

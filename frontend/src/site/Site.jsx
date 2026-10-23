@@ -3,6 +3,9 @@ import { api } from '../api.js';
 import Icone from '../componentes/Icone.jsx';
 import { CATEGORIAS_PORTFOLIO, TIPOS_PECA, dataHora, hojeIso, linkWhats, moeda, telefone } from '../util.js';
 import Inscricao from './Inscricao.jsx';
+import { Link } from 'react-router-dom';
+import { CartaoPeca, DetalhePeca } from './Catalogo.jsx';
+import { duracaoTexto } from './BlocoPix.jsx';
 
 const SERVICOS = [
   { icone: 'encomenda', fundo: 'var(--oliva-claro)', caixa: 'var(--oliva)', texto: '#4A4030', titulo: 'Peças sob encomenda',
@@ -19,6 +22,7 @@ export default function Site() {
   const [site, setSite] = useState(null);
   const [erro, setErro] = useState(null);
   const [oficinaEscolhida, setOficinaEscolhida] = useState(null);
+  const [pecaAberta, setPecaAberta] = useState(null);
 
   useEffect(() => {
     api.get('/api/publico/site').then(setSite).catch((e) => setErro(e.message));
@@ -27,6 +31,8 @@ export default function Site() {
   const atelie = site?.atelie || { nomeAtelie: 'Lenne Carvalho Ateliê', whatsapp: '5598988793891', instagram: 'lennecarvalhoatelie' };
   const fotos = site?.portfolio || [];
   const oficinas = site?.oficinas || [];
+  const catalogo = site?.catalogo || [];
+  const cursos = site?.cursos || [];
 
   return (
     <div className="site">
@@ -34,9 +40,10 @@ export default function Site() {
         <div className="cabecalho">
           <a href="#inicio" className="marca"><strong>Lenne Carvalho</strong><span>ateliê</span></a>
           <nav aria-label="Principal">
-            <a href="#servicos">Serviços</a>
+            {catalogo.length > 0 ? <Link to="/catalogo">Catálogo</Link> : <a href="#servicos">Serviços</a>}
             <a href="#portfolio">Portfólio</a>
             <a href="#oficinas">Oficinas</a>
+            {cursos.length > 0 && <a href="#cursos">Cursos online</a>}
             <a href="#sobre">Quem sou</a>
             <a href="#orcamento" className="btn btn-terra">Pedir orçamento</a>
           </nav>
@@ -85,6 +92,21 @@ export default function Site() {
             ))}
           </div>
         </section>
+
+        {catalogo.length > 0 && (
+          <section id="catalogo" className="envolve secao" aria-labelledby="cat-titulo">
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, marginBottom: 24 }}>
+              <div>
+                <p className="sobretitulo">Catálogo</p>
+                <h2 id="cat-titulo" className="titulo-secao">Peças que saem do ateliê</h2>
+              </div>
+              <Link to="/catalogo" className="btn btn-claro">Ver o catálogo completo<Icone nome="seta" tamanho={16} /></Link>
+            </div>
+            <div className="pecas-grade">
+              {catalogo.slice(0, 8).map((i) => <CartaoPeca key={i.id} i={i} aoAbrir={() => setPecaAberta(i)} />)}
+            </div>
+          </section>
+        )}
 
         <Portfolio fotos={fotos} instagram={atelie.instagram} />
 
@@ -149,6 +171,29 @@ export default function Site() {
           </div>
         </section>
 
+        {cursos.length > 0 ? (
+          <section id="cursos" className="envolve secao" aria-labelledby="cursos-titulo">
+            <p className="sobretitulo">Aprenda em casa</p>
+            <h2 id="cursos-titulo" className="titulo-secao" style={{ marginBottom: 24 }}>Cursos online de macramê</h2>
+            <div className="cursos-grade">
+              {cursos.map((c) => (
+                <Link key={c.id} to={`/cursos/${c.id}`} className="curso-card">
+                  <span className="curso-capa">{c.capa ? <img src={c.capa} alt="" loading="lazy" /> : <span className="cursiva" aria-hidden="true">macramê</span>}</span>
+                  <span style={{ padding: '16px 18px 20px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {c.nivel && <span className="selo selo-oliva" style={{ alignSelf: 'flex-start' }}>{c.nivel}</span>}
+                    <span style={{ fontSize: 21, fontWeight: 900 }}>{c.titulo}</span>
+                    {c.resumo && <span style={{ fontWeight: 600, color: 'var(--marrom-2)' }}>{c.resumo}</span>}
+                    <span className="mudo forte" style={{ fontSize: 14 }}>{c.totalAulas} {c.totalAulas === 1 ? 'aula' : 'aulas'}{duracaoTexto(c.duracaoTotal) ? ` · ${duracaoTexto(c.duracaoTotal)}` : ''}</span>
+                    <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+                      <strong style={{ fontSize: 22 }}>{Number(c.valor) > 0 ? moeda(c.valor) : 'Grátis'}</strong>
+                      <span className="btn btn-terra btn-p">Ver o curso</span>
+                    </span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : (
         <section className="envolve" style={{ paddingTop: 56 }} aria-labelledby="cursos-titulo">
           <div className="bloco" style={{ background: 'var(--oliva-medio)', display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center', padding: '30px 36px' }}>
             <div style={{ flex: '1 1 360px', minWidth: 0, color: '#2E3518' }}>
@@ -160,6 +205,7 @@ export default function Site() {
               href={linkWhats(atelie.whatsapp, 'Olá, Lenne! Quero ser avisada quando os cursos online abrirem.')}>Quero ser avisada</a>
           </div>
         </section>
+        )}
       </main>
 
       <footer className="envolve rodape-site">
@@ -189,6 +235,7 @@ export default function Site() {
       </footer>
 
       {erro && <div className="toast toast-erro" role="alert">Não foi possível carregar as oficinas agora.</div>}
+      {pecaAberta && <DetalhePeca i={pecaAberta} whatsapp={atelie.whatsapp} aoFechar={() => setPecaAberta(null)} />}
       {oficinaEscolhida && <Inscricao oficina={oficinaEscolhida} aoFechar={() => setOficinaEscolhida(null)} />}
     </div>
   );

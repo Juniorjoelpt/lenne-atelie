@@ -6,20 +6,21 @@ import { Campo, Confirmar, Estado, Modal, ModalForm, lerForm, useCarregar, useTo
 import { FRENTES, calcularFicha, moeda, moedaUnit, qtd, qtdUn } from '../util.js';
 import { Topo } from './Layout.jsx';
 
-const FILTROS = [['TODAS', 'Todas'], ['PRONTA', 'Pronta-entrega'], ['INATIVAS', 'Inativas']];
+const FILTROS = [['TODAS', 'Todas'], ['PRONTA', 'Pronta-entrega'], ['CATALOGO', 'No catálogo do site'], ['INATIVAS', 'Inativas']];
 
 export default function Produtos() {
   const [filtro, setFiltro] = useState('TODAS');
   const [ficha, setFicha] = useState(null);
   const [produzir, setProduzir] = useState(null);
   const [excluir, setExcluir] = useState(null);
+  const [catalogo, setCatalogo] = useState(null);
   const toast = useToast();
   const ajudante = sessao.ajudante();
   const produtos = useCarregar(() => api.get('/api/produtos'));
   const prec = useCarregar(() => (ajudante ? Promise.resolve({ configurada: true }) : api.get('/api/configuracoes/precificacao')));
 
   const lista = (produtos.dados || []).filter((p) =>
-    filtro === 'INATIVAS' ? !p.ativo : p.ativo && (filtro === 'TODAS' || p.prontaEntrega));
+    filtro === 'INATIVAS' ? !p.ativo : p.ativo && (filtro === 'TODAS' || (filtro === 'CATALOGO' ? p.catalogo.noCatalogo : p.prontaEntrega)));
 
   return (
     <>
@@ -54,7 +55,7 @@ export default function Produtos() {
           <div className="grade-fichas">
             {lista.map((p) => (ajudante
               ? <CartaoProducao key={p.id} p={p} aoProduzir={() => setProduzir(p)} />
-              : <CartaoProduto key={p.id} p={p} aoEditar={() => setFicha(p)} aoProduzir={() => setProduzir(p)} aoExcluir={() => setExcluir(p)} />))}
+              : <CartaoProduto key={p.id} p={p} aoEditar={() => setFicha(p)} aoProduzir={() => setProduzir(p)} aoExcluir={() => setExcluir(p)} aoCatalogo={() => setCatalogo(p)} />))}
           </div>
         )}
       </Estado>
@@ -81,6 +82,8 @@ export default function Produtos() {
         </ModalForm>
       )}
 
+      {catalogo && <CatalogoPeca p={catalogo} aoFechar={() => { setCatalogo(null); produtos.recarregar(); }} />}
+
       {excluir && <Confirmar titulo="Excluir peça" perigo textoBotao="Excluir" texto={`Excluir a ficha "${excluir.nome}"?`}
         aoFechar={() => setExcluir(null)}
         aoConfirmar={async () => { await api.del(`/api/produtos/${excluir.id}`); toast('Peça excluída.'); setExcluir(null); produtos.recarregar(); }} />}
@@ -106,7 +109,79 @@ function CartaoProducao({ p, aoProduzir }) {
   );
 }
 
-function CartaoProduto({ p, aoEditar, aoProduzir, aoExcluir }) {
+/** Como a peça aparece no catálogo do site: liga/desliga, texto, preço, prazo e fotos. */
+function CatalogoPeca({ p, aoFechar }) {
+  const [info, setInfo] = useState(p.catalogo);
+  const [erro, setErro] = useState(null);
+  const [enviando, setEnviando] = useState(false);
+  const toast = useToast();
+
+  async function fotos(ev) {
+    const lista = [...ev.target.files];
+    ev.target.value = '';
+    setErro(null);
+    setEnviando(true);
+    try {
+      let atual = info;
+      for (const f of lista) {
+        if (f.size > 8 * 1024 * 1024) throw new Error(`${f.name} tem mais de 8 MB.`);
+        const fd = new FormData();
+        fd.append('foto', f);
+        atual = await api.enviar(`/api/produtos/${p.id}/fotos`, fd);
+        setInfo(atual);
+      }
+      toast(lista.length === 1 ? 'Foto enviada.' : 'Fotos enviadas.');
+    } catch (e) { setErro(e.message); } finally { setEnviando(false); }
+  }
+
+  async function acaoFoto(fn) {
+    setErro(null);
+    try { setInfo(await fn()); } catch (e) { setErro(e.message); }
+  }
+
+  return (
+    <ModalForm titulo={`Catálogo: ${p.nome}`} largo textoSalvar="Salvar catálogo" aoFechar={aoFechar} aoSalvar={async (fd) => {
+      const d = lerForm(fd, ['ordemCatalogo']);
+      d.noCatalogo = fd.get('noCatalogo') === 'on';
+      d.mostrarPreco = fd.get('mostrarPreco') === 'on';
+      await api.put(`/api/produtos/${p.id}/catalogo`, d);
+      toast(d.noCatalogo ? 'Peça no catálogo do site.' : 'Peça fora do catálogo.');
+      aoFechar();
+    }}>
+      <label className="checkbox inteiro"><input type="checkbox" name="noCatalogo" defaultChecked={info.noCatalogo} /> Mostrar esta peça no catálogo do site</label>
+      <Campo rotulo="Texto para a cliente" nome="textoCatalogo" linhas={4} defaultValue={info.textoCatalogo} maxLength={2000} inteiro
+        placeholder="Feita à mão em cordão de algodão. Pode ser feita nas cores e medidas do seu espaço…" dica="A descrição da ficha técnica continua só no sistema." />
+      <Campo rotulo="Prazo de produção" nome="prazoProducao" defaultValue={info.prazoProducao} maxLength={80} placeholder="Até 15 dias" />
+      <Campo rotulo="Ordem no catálogo" nome="ordemCatalogo" tipo="number" step="1" defaultValue={info.ordemCatalogo} />
+      <label className="checkbox inteiro"><input type="checkbox" name="mostrarPreco" defaultChecked={info.mostrarPreco} />
+        Mostrar o preço ({moeda(p.custo.precoAtual)}{p.prontaEntrega ? '' : ', como "a partir de"'}). Desmarcado, aparece "sob consulta".</label>
+      <div className="inteiro" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <p className="forte">Fotos ({info.fotos.length} de 8) · a primeira é a capa</p>
+          <label className="btn btn-claro btn-p botao-upload"><Icone nome="foto" tamanho={16} />{enviando ? 'Enviando…' : 'Adicionar fotos'}
+            <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={fotos} disabled={enviando || info.fotos.length >= 8} aria-label="Fotos da peça" /></label>
+        </div>
+        {erro && <div className="aviso aviso-erro" role="alert">{erro}</div>}
+        {info.fotos.length === 0 ? <p className="mudo forte" style={{ fontSize: 14 }}>Sem fotos, a peça aparece com um fundo neutro. Uma boa foto vende muito mais!</p> : (
+          <div className="fotos-produto">
+            {info.fotos.map((f, i) => (
+              <figure key={f.id}>
+                <img src={f.url} alt={`Foto ${i + 1} de ${p.nome}`} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 4 }}>
+                  {i === 0 ? <span className="selo selo-oliva" style={{ fontSize: 12 }}>capa</span>
+                    : <button type="button" className="btn btn-fantasma btn-p" style={{ padding: '0 8px', minHeight: 32 }} onClick={() => acaoFoto(() => api.post(`/api/fotos-produto/${f.id}/capa`))}>Capa</button>}
+                  <button type="button" className="btn btn-fantasma btn-icone btn-p" aria-label={`Excluir foto ${i + 1}`} onClick={() => acaoFoto(() => api.del(`/api/fotos-produto/${f.id}`))}><Icone nome="lixo" tamanho={16} /></button>
+                </div>
+              </figure>
+            ))}
+          </div>
+        )}
+      </div>
+    </ModalForm>
+  );
+}
+
+function CartaoProduto({ p, aoEditar, aoProduzir, aoExcluir, aoCatalogo }) {
   const c = p.custo;
   const prejuizo = Number(c.lucroUnitario) < 0;
   return (
@@ -119,6 +194,7 @@ function CartaoProduto({ p, aoEditar, aoProduzir, aoExcluir }) {
           </span>
         )}
         {!p.ativo && <span className="selo selo-areia">inativa</span>}
+        {p.catalogo.noCatalogo && <span className="selo selo-terra"><Icone nome="site" tamanho={13} />no site</span>}
       </div>
       <h2 style={{ fontSize: 21 }}>{p.nome}</h2>
       <div className="preco-linha">
@@ -132,6 +208,7 @@ function CartaoProduto({ p, aoEditar, aoProduzir, aoExcluir }) {
       </p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 'auto' }}>
         <button type="button" className="btn btn-claro btn-p" onClick={aoEditar}><Icone nome="editar" tamanho={16} />Ficha</button>
+        <button type="button" className="btn btn-claro btn-p" onClick={aoCatalogo}><Icone nome="site" tamanho={16} />Catálogo</button>
         {p.prontaEntrega && p.ativo && <button type="button" className="btn btn-oliva btn-p" onClick={aoProduzir}><Icone nome="mais" tamanho={16} largura={3} />Produzi</button>}
         <button type="button" className="btn btn-fantasma btn-icone btn-p" aria-label={`Excluir ${p.nome}`} onClick={aoExcluir}><Icone nome="lixo" tamanho={18} /></button>
       </div>
