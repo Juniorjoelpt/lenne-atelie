@@ -172,6 +172,11 @@ O estoque de material pode ficar negativo; nesse caso aparece como "registre a c
    ```
    Depois rode: `certbot --nginx -d lennecarvalhoatelie.com.br -d www.lennecarvalhoatelie.com.br`
 
+**Servidor de 1 GB (demonstração).** Em máquinas pequenas como a Google Cloud e2-micro, crie 3 GB de swap e suba com os ajustes de memória (MySQL enxuto e Java limitado a 256 MB; o sistema usa cerca de 350 MB):
+```
+docker compose -f docker-compose.yml -f docker-compose.pequena.yml up -d --build
+```
+
 **Backups.** O banco fica no volume `banco`, as fotos do site no volume `uploads` e as fotos privadas das encomendas no volume `privado`. Para um backup do banco:
 ```
 docker compose exec banco sh -c 'mysqldump -u root -p"$MYSQL_ROOT_PASSWORD" lenne_atelie' > backup.sql
