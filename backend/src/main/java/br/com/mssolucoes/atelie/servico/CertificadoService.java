@@ -13,14 +13,10 @@ import br.com.mssolucoes.atelie.web.NaoEncontradoException;
 import br.com.mssolucoes.atelie.web.RegraNegocioException;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.*;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.awt.Color;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDate;
@@ -49,19 +45,16 @@ public class CertificadoService {
     private final OficinaRepository oficinas;
     private final ConfiguracaoService configuracao;
     private final UrlPublica url;
-    private final BaseFont cursiva;
-    private final BaseFont regular;
-    private final BaseFont negrito;
+    private final BaseFont regular = REGULAR;
+    private final BaseFont media = MEDIA;
+    private final BaseFont negrito = SEMINEGRITO;
 
     public CertificadoService(InscricaoRepository inscricoes, OficinaRepository oficinas,
-                              ConfiguracaoService configuracao, UrlPublica url) throws IOException {
+                              ConfiguracaoService configuracao, UrlPublica url) {
         this.inscricoes = inscricoes;
         this.oficinas = oficinas;
         this.configuracao = configuracao;
         this.url = url;
-        this.cursiva = fonte("Allura-Regular.ttf");
-        this.regular = fonte("Nunito-Regular.ttf");
-        this.negrito = fonte("Nunito-ExtraBold.ttf");
     }
 
     @Transactional(readOnly = true)
@@ -146,30 +139,30 @@ public class CertificadoService {
     private void pagina(Document doc, PdfWriter writer, Configuracao cfg, Inscricao i) {
         Oficina o = i.getOficina();
 
-        Paragraph atelie = centro(espacado(cfg.getNomeAtelie().toUpperCase(PT_BR), new Font(negrito, 10, Font.NORMAL, TERRA), 2.2f));
-        atelie.setSpacingBefore(18);
-        adicionar(doc, atelie);
+        Image logo = logoEmpilhada();
+        logo.scaleToFit(150, 58);
+        logo.setAlignment(Element.ALIGN_CENTER);
+        adicionar(doc, logo);
 
-        Paragraph titulo = centro(new Phrase("Certificado", new Font(cursiva, 66, Font.NORMAL, MARROM)));
-        titulo.setLeading(64);
-        titulo.setSpacingBefore(4);
+        Paragraph titulo = centro(espacado("CERTIFICADO", new Font(media, 30, Font.NORMAL, MARROM), 8f));
+        titulo.setSpacingBefore(16);
         adicionar(doc, titulo);
-        Paragraph sub = centro(espacado("DE PARTICIPAÇÃO", new Font(negrito, 11, Font.NORMAL, TERRA), 3f));
-        sub.setSpacingBefore(16);
+        Paragraph sub = centro(espacado("DE PARTICIPAÇÃO", new Font(negrito, 10, Font.NORMAL, TERRA), 4f));
+        sub.setSpacingBefore(2);
         adicionar(doc, sub);
 
-        Paragraph certificamos = centro(new Phrase("Certificamos que", new Font(regular, 13, Font.NORMAL, MARROM_2)));
-        certificamos.setSpacingBefore(34);
+        Paragraph certificamos = centro(new Phrase("Certificamos que", new Font(regular, 12, Font.NORMAL, MARROM_2)));
+        certificamos.setSpacingBefore(22);
         adicionar(doc, certificamos);
 
-        Font fonteNome = new Font(cursiva, i.getNome().length() > 34 ? 38 : 46, Font.NORMAL, TERRA);
+        Font fonteNome = new Font(negrito, i.getNome().length() > 34 ? 24 : 30, Font.NORMAL, TERRA);
         Paragraph nome = centro(new Phrase(i.getNome(), fonteNome));
-        nome.setLeading(54);
+        nome.setLeading(38);
         nome.setSpacingBefore(4);
         adicionar(doc, nome);
 
-        Font texto = new Font(regular, 13, Font.NORMAL, MARROM);
-        Font textoForte = new Font(negrito, 13, Font.NORMAL, MARROM);
+        Font texto = new Font(regular, 12, Font.NORMAL, MARROM);
+        Font textoForte = new Font(negrito, 12, Font.NORMAL, MARROM);
         Paragraph corpo = new Paragraph();
         corpo.setAlignment(Element.ALIGN_CENTER);
         corpo.setLeading(21);
@@ -220,10 +213,11 @@ public class CertificadoService {
         PdfPCell assinatura = semBorda();
         assinatura.setVerticalAlignment(Element.ALIGN_BOTTOM);
         String quem = cfg.getResponsavel() != null ? cfg.getResponsavel() : cfg.getNomeAtelie();
-        Paragraph nomeAssinatura = centro(new Phrase(quem, new Font(cursiva, 26, Font.NORMAL, MARROM)));
-        nomeAssinatura.setLeading(24);
-        nomeAssinatura.setSpacingAfter(8);
-        assinatura.addElement(nomeAssinatura);
+        Image simbolo = simbolo();
+        simbolo.scaleToFit(28, 28);
+        simbolo.setAlignment(Element.ALIGN_CENTER);
+        simbolo.setSpacingAfter(6);
+        assinatura.addElement(simbolo);
         PdfPTable linha = new PdfPTable(1);
         linha.setWidthPercentage(86);
         PdfPCell l = new PdfPCell();
@@ -292,13 +286,8 @@ public class CertificadoService {
         return new Phrase(c);
     }
 
-    private static BaseFont fonte(String arquivo) throws IOException {
-        try (InputStream in = new ClassPathResource("fontes/" + arquivo).getInputStream()) {
-            return BaseFont.createFont(arquivo, BaseFont.IDENTITY_H, BaseFont.EMBEDDED, true, in.readAllBytes(), null);
-        }
-    }
 
-    /** Fundo cru com moldura dupla terracota/areia e nós de macramê nos cantos. */
+    /** Fundo off-white com moldura dupla nas cores da marca (marrom e bege). */
     private static final class Moldura extends PdfPageEventHelper {
         @Override
         public void onStartPage(PdfWriter writer, Document document) {
@@ -313,31 +302,11 @@ public class CertificadoService {
             cb.setLineWidth(2.2f);
             cb.roundRectangle(22, 22, p.getWidth() - 44, p.getHeight() - 44, 14);
             cb.stroke();
-            cb.setColorStroke(AREIA);
-            cb.setLineWidth(0.9f);
+            cb.setColorStroke(BEGE);
+            cb.setLineWidth(1f);
             cb.roundRectangle(32, 32, p.getWidth() - 64, p.getHeight() - 64, 10);
             cb.stroke();
-
-            float[][] cantos = {{32, 32}, {p.getWidth() - 32, 32}, {32, p.getHeight() - 32}, {p.getWidth() - 32, p.getHeight() - 32}};
-            for (float[] c : cantos) {
-                no(cb, c[0], c[1]);
-            }
             cb.restoreState();
-        }
-
-        /** Três argolas entrelaçadas, como um nó de macramê. */
-        private static void no(PdfContentByte cb, float x, float y) {
-            cb.setColorFill(CRU);
-            cb.circle(x, y, 10);
-            cb.fill();
-            Color[] cores = {TERRA, OLIVA, TERRA};
-            float[][] pos = {{-5, 0}, {0, 0}, {5, 0}};
-            for (int k = 0; k < pos.length; k++) {
-                cb.setColorStroke(cores[k]);
-                cb.setLineWidth(1.4f);
-                cb.circle(x + pos[k][0], y + pos[k][1], 4.2f);
-                cb.stroke();
-            }
         }
     }
 }

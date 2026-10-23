@@ -5,6 +5,8 @@ import com.lowagie.text.*;
 import com.lowagie.text.pdf.*;
 
 import java.awt.Color;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -13,29 +15,45 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.function.Consumer;
 
-/** Estilo dos PDFs do ateliê: cabeçalho com a marca, tabelas e rodapé com contato. */
+/**
+ * Estilo dos PDFs do ateliê, com a identidade visual: logo no cabeçalho, Montserrat,
+ * marrom #8D553A, bege #E3C4A8, off-white #F9F6EF e verde #00674E.
+ */
 public final class PdfAtelie {
 
-    public static final Color MARROM = new Color(0x3B, 0x2A, 0x20);
-    public static final Color MARROM_2 = new Color(0x5A, 0x46, 0x36);
-    public static final Color TERRA = new Color(0x9A, 0x4A, 0x2A);
-    public static final Color TERRA_CLARO = new Color(0xF2, 0xD2, 0xBF);
-    public static final Color OLIVA = new Color(0x5E, 0x6B, 0x3F);
-    public static final Color OLIVA_CLARO = new Color(0xE3, 0xE8, 0xD2);
-    public static final Color CRU = new Color(0xFB, 0xF6, 0xEE);
-    public static final Color AREIA = new Color(0xE8, 0xDC, 0xC8);
-    public static final Color LINHA = new Color(0xEA, 0xDF, 0xCD);
+    public static final Color MARROM = new Color(0x3A, 0x28, 0x1E);
+    public static final Color MARROM_2 = new Color(0x5C, 0x45, 0x35);
+    /** Marrom da marca. */
+    public static final Color TERRA = new Color(0x8D, 0x55, 0x3A);
+    public static final Color TERRA_CLARO = new Color(0xF0, 0xDC, 0xCA);
+    /** Verde da marca. */
+    public static final Color OLIVA = new Color(0x00, 0x67, 0x4E);
+    public static final Color OLIVA_CLARO = new Color(0xDC, 0xED, 0xE5);
+    public static final Color CRU = new Color(0xF9, 0xF6, 0xEF);
+    /** Bege da marca. */
+    public static final Color BEGE = new Color(0xE3, 0xC4, 0xA8);
+    public static final Color AREIA = new Color(0xEB, 0xDC, 0xCB);
+    public static final Color LINHA = new Color(0xE9, 0xDF, 0xD2);
 
-    public static final Font TITULO = new Font(Font.HELVETICA, 20, Font.BOLD, MARROM);
-    public static final Font SUBTITULO = new Font(Font.HELVETICA, 10, Font.NORMAL, MARROM_2);
-    public static final Font SECAO = new Font(Font.HELVETICA, 12, Font.BOLD, TERRA);
-    public static final Font TEXTO = new Font(Font.HELVETICA, 10, Font.NORMAL, MARROM);
-    public static final Font TEXTO_FORTE = new Font(Font.HELVETICA, 10, Font.BOLD, MARROM);
-    public static final Font PEQUENO = new Font(Font.HELVETICA, 8, Font.NORMAL, MARROM_2);
-    public static final Font TABELA_CAB = new Font(Font.HELVETICA, 8, Font.BOLD, MARROM_2);
-    public static final Font TABELA = new Font(Font.HELVETICA, 9, Font.NORMAL, MARROM);
-    public static final Font TABELA_FORTE = new Font(Font.HELVETICA, 9, Font.BOLD, MARROM);
-    public static final Font DESTAQUE = new Font(Font.HELVETICA, 16, Font.BOLD, TERRA);
+    public static final BaseFont REGULAR = fonte("Montserrat-Regular.ttf");
+    public static final BaseFont MEDIA = fonte("Montserrat-Medium.ttf");
+    public static final BaseFont SEMINEGRITO = fonte("Montserrat-SemiBold.ttf");
+    public static final BaseFont NEGRITO = fonte("Montserrat-Bold.ttf");
+
+    public static final Font TITULO = new Font(NEGRITO, 18, Font.NORMAL, MARROM);
+    public static final Font SUBTITULO = new Font(REGULAR, 9, Font.NORMAL, MARROM_2);
+    public static final Font SECAO = new Font(NEGRITO, 11, Font.NORMAL, TERRA);
+    public static final Font TEXTO = new Font(REGULAR, 9.5f, Font.NORMAL, MARROM);
+    public static final Font TEXTO_FORTE = new Font(SEMINEGRITO, 9.5f, Font.NORMAL, MARROM);
+    public static final Font PEQUENO = new Font(REGULAR, 7.5f, Font.NORMAL, MARROM_2);
+    public static final Font TABELA_CAB = new Font(SEMINEGRITO, 7.5f, Font.NORMAL, MARROM_2);
+    public static final Font TABELA = new Font(REGULAR, 8.5f, Font.NORMAL, MARROM);
+    public static final Font TABELA_FORTE = new Font(SEMINEGRITO, 8.5f, Font.NORMAL, MARROM);
+    public static final Font DESTAQUE = new Font(NEGRITO, 15, Font.NORMAL, TERRA);
+
+    private static final byte[] LOGO_HORIZONTAL = recurso("marca/horizontal.png");
+    private static final byte[] LOGO_SIMBOLO = recurso("marca/simbolo.png");
+    private static final byte[] LOGO_EMPILHADA = recurso("marca/empilhada.png");
 
     private static final Locale PT_BR = Locale.forLanguageTag("pt-BR");
     private static final DateTimeFormatter DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -59,13 +77,15 @@ public final class PdfAtelie {
         return out.toByteArray();
     }
 
-    /** Marca do ateliê à esquerda, título do documento à direita, linha terracota embaixo. */
+    /** Logo do ateliê à esquerda, título do documento à direita, linha marrom embaixo. */
     public static void cabecalho(Document doc, Configuracao cfg, String titulo, String subtitulo) {
         PdfPTable t = new PdfPTable(new float[]{1f, 1.25f});
         t.setWidthPercentage(100);
         PdfPCell marca = semBorda();
-        Paragraph nome = new Paragraph(cfg.getNomeAtelie(), new Font(Font.HELVETICA, 15, Font.BOLD, MARROM));
-        marca.addElement(nome);
+        Image logo = imagem(LOGO_HORIZONTAL);
+        logo.scaleToFit(190, 40);
+        logo.setSpacingAfter(4);
+        marca.addElement(logo);
         StringBuilder contato = new StringBuilder();
         if (cfg.getWhatsapp() != null) {
             contato.append("WhatsApp ").append(telefone(cfg.getWhatsapp()));
@@ -80,7 +100,7 @@ public final class PdfAtelie {
         t.addCell(marca);
 
         PdfPCell direita = semBorda();
-        Font fonteTitulo = titulo.length() > 14 ? new Font(Font.HELVETICA, 16, Font.BOLD, MARROM) : TITULO;
+        Font fonteTitulo = titulo.length() > 14 ? new Font(NEGRITO, 15, Font.NORMAL, MARROM) : TITULO;
         Paragraph pt = new Paragraph(titulo, fonteTitulo);
         pt.setAlignment(Element.ALIGN_RIGHT);
         direita.addElement(pt);
@@ -241,6 +261,47 @@ public final class PdfAtelie {
             doc.add(e);
         } catch (DocumentException ex) {
             throw new IllegalStateException("Erro ao montar o PDF", ex);
+        }
+    }
+
+    // ---------- Marca ----------
+
+    public static Image logoHorizontal() {
+        return imagem(LOGO_HORIZONTAL);
+    }
+
+    public static Image logoEmpilhada() {
+        return imagem(LOGO_EMPILHADA);
+    }
+
+    public static Image simbolo() {
+        return imagem(LOGO_SIMBOLO);
+    }
+
+    private static Image imagem(byte[] bytes) {
+        try {
+            return Image.getInstance(bytes);
+        } catch (IOException | DocumentException e) {
+            throw new IllegalStateException("Logo do ateliê inválida", e);
+        }
+    }
+
+    private static byte[] recurso(String caminho) {
+        try (InputStream in = PdfAtelie.class.getClassLoader().getResourceAsStream(caminho)) {
+            if (in == null) {
+                throw new IllegalStateException("Arquivo não encontrado: " + caminho);
+            }
+            return in.readAllBytes();
+        } catch (IOException e) {
+            throw new IllegalStateException("Não foi possível ler " + caminho, e);
+        }
+    }
+
+    private static BaseFont fonte(String arquivo) {
+        try {
+            return BaseFont.createFont(arquivo, BaseFont.IDENTITY_H, BaseFont.EMBEDDED, true, recurso("fontes/" + arquivo), null);
+        } catch (IOException | DocumentException e) {
+            throw new IllegalStateException("Fonte inválida: " + arquivo, e);
         }
     }
 

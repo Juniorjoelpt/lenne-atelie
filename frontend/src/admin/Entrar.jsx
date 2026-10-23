@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, sessao } from '../api.js';
+import Marca from '../componentes/Marca.jsx';
 
 export default function Entrar() {
   const [erro, setErro] = useState(null);
@@ -24,11 +25,11 @@ export default function Entrar() {
   }
 
   return (
-    <div className="login-pagina">
+    <div className="login-pagina estampa">
       <form className="login-caixa" onSubmit={entrar}>
         <div style={{ textAlign: 'center' }}>
-          <p className="marca" style={{ justifyContent: 'center' }}><strong>Lenne Carvalho</strong><span>ateliê</span></p>
-          <p className="mudo forte" style={{ marginTop: 4 }}>Sistema de gestão</p>
+          <Marca variante="empilhada" style={{ width: 230, margin: '0 auto' }} />
+          <p className="mudo forte" style={{ marginTop: 12 }}>Sistema de gestão</p>
         </div>
         {params.get('expirou') && !erro && <div className="aviso aviso-info">Sua sessão expirou. Entre novamente.</div>}
         {erro && <div className="aviso aviso-erro" role="alert">{erro}</div>}

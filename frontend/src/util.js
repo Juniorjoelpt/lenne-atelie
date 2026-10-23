@@ -150,4 +150,5 @@ export const TIPOS_PECA = [
 ];
 
 /** Cores dos gráficos, na ordem da marca. */
-export const CORES_GRAFICO = ['#C9693F', '#A9B48A', '#E2BE7A', '#8C6A4F', '#D99A7A', '#5E6B3F'];
+/** Validada para daltonismo e contraste (as cores exatas da marca têm a mesma luminosidade e se confundem). */
+export const CORES_GRAFICO = ['#9E4A28', '#119170', '#D9A441', '#5E6FB8', '#D27A8C', '#6B8E3A'];

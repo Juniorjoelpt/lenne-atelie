@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { api, sessao } from '../api.js';
 import Icone from '../componentes/Icone.jsx';
+import Marca from '../componentes/Marca.jsx';
 import { Estado, Selo, useCarregar, Vazio } from '../componentes/ui.jsx';
 import { CORES_GRAFICO, STATUS_ENCOMENDA, dataCurta, dataHora, moeda, moedaCurta, primeiroNome, qtdUn } from '../util.js';
 import { Topo } from './Layout.jsx';
@@ -53,7 +54,7 @@ function Conteudo({ p }) {
         </Link>
       )}
       {p.contasAPagar.length > 0 && <ContasAPagar contas={p.contasAPagar} />}
-      <section className="boas-vindas" aria-label="Boas-vindas">
+      <section className="boas-vindas estampa" aria-label="Boas-vindas">
         <div style={{ flex: '1 1 300px', minWidth: 0 }}>
           <p style={{ fontSize: 30, fontWeight: 900, color: 'var(--terra-escuro)' }}>{p.saudacao}, {primeiroNome(sessao.nome()) || 'Lenne'}!</p>
           <p style={{ marginTop: 6, fontSize: 18, color: '#5A3A28' }}>
@@ -61,14 +62,7 @@ function Conteudo({ p }) {
               : <>Você tem {frases.reduce((a, f, i) => (i === 0 ? [f] : [...a, ' e ', f]), [])}.</>}
           </p>
         </div>
-        <svg width="110" height="140" viewBox="0 0 120 150" aria-hidden="true">
-          <rect x="14" y="10" width="92" height="8" rx="4" fill="#B98A5E" />
-          <g stroke="#FBF6EE" strokeWidth="4" strokeLinecap="round" fill="none">
-            <path d="M28 18v34l16 18 16-18 16 18 16-18V18" /><path d="M44 18v26l16 18 16-18V18M60 18v28" />
-            <path d="M44 70v40M60 76v50M76 70v40M28 52v40M92 52v40" />
-          </g>
-          <circle cx="60" cy="62" r="6" fill="#C9845F" />
-        </svg>
+        <Marca variante="simbolo" decorativa style={{ width: 120, flex: '0 0 auto' }} />
       </section>
 
       <section className="grade-resumo" aria-label="Resumo">
@@ -164,7 +158,7 @@ function Conteudo({ p }) {
       {p.materiaisBaixos.length > 0 && (
         <section className="clay" aria-label="Aviso de estoque" style={{ background: 'var(--oliva-medio)', borderRadius: 32, padding: '22px 30px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 20 }}>
           <div className="icone-caixa" style={{ background: 'var(--ocre-claro)' }}><Icone nome="alerta" cor="var(--ocre-texto)" tamanho={28} /></div>
-          <div style={{ flex: '1 1 260px', minWidth: 0, color: '#2E3518' }}>
+          <div style={{ flex: '1 1 260px', minWidth: 0, color: 'var(--oliva-texto)' }}>
             <p style={{ fontSize: 20, fontWeight: 900 }}>
               {p.materiaisBaixos.length === 1 ? `${p.materiaisBaixos[0].nome} está acabando` : `${p.materiaisBaixos.length} materiais estão acabando`}
             </p>
@@ -216,7 +210,7 @@ function PainelAjudante() {
   return (
     <>
       <Topo titulo="Painel" />
-      <section className="boas-vindas" aria-label="Boas-vindas">
+      <section className="boas-vindas estampa" aria-label="Boas-vindas">
         <div style={{ flex: '1 1 300px', minWidth: 0 }}>
           <p style={{ fontSize: 30, fontWeight: 900, color: 'var(--terra-escuro)' }}>{h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'}, {primeiroNome(sessao.nome())}!</p>
           <p style={{ marginTop: 6, fontSize: 18, color: '#5A3A28' }}>
@@ -258,7 +252,7 @@ function PainelAjudante() {
       {baixos.length > 0 && (
         <section className="clay" aria-label="Aviso de estoque" style={{ background: 'var(--oliva-medio)', borderRadius: 32, padding: '22px 30px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 20 }}>
           <div className="icone-caixa" style={{ background: 'var(--ocre-claro)' }}><Icone nome="alerta" cor="var(--ocre-texto)" tamanho={28} /></div>
-          <div style={{ flex: '1 1 260px', minWidth: 0, color: '#2E3518' }}>
+          <div style={{ flex: '1 1 260px', minWidth: 0, color: 'var(--oliva-texto)' }}>
             <p style={{ fontSize: 20, fontWeight: 900 }}>Avise a Lenne: material acabando</p>
             <p style={{ fontWeight: 700 }}>{baixos.map((m) => `${m.nome}: ${qtdUn(m.quantidade, m.unidade)}`).join(' · ')}</p>
           </div>

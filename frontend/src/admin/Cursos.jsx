@@ -1,3 +1,4 @@
+import { SemImagem } from '../componentes/Marca.jsx';
 import { useState } from 'react';
 import { api } from '../api.js';
 import Icone from '../componentes/Icone.jsx';
@@ -52,7 +53,7 @@ export default function Cursos() {
           <div className="cursos-grade">
             {lista.dados?.map((c) => (
               <article key={c.id} className="curso-card" style={{ cursor: 'default' }}>
-                <span className="curso-capa">{c.capa ? <img src={c.capa} alt="" /> : <span className="cursiva" aria-hidden="true">macramê</span>}</span>
+                <span className="curso-capa">{c.capa ? <img src={c.capa} alt="" /> : <SemImagem />}</span>
                 <div style={{ padding: '14px 18px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     <span className={`selo ${c.publicado ? 'selo-oliva' : 'selo-areia'}`}>{c.publicado ? 'No site' : 'Rascunho'}</span>

@@ -1,3 +1,4 @@
+import { SemImagem } from '../componentes/Marca.jsx';
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api.js';
 import Icone from '../componentes/Icone.jsx';
@@ -23,7 +24,7 @@ export function CartaoPeca({ i, aoAbrir }) {
   return (
     <button type="button" className="peca-card" onClick={aoAbrir} aria-label={`${i.nome}, ${precoTexto(i)}. Ver detalhes`}>
       <span className="peca-foto">
-        {i.fotos[0] ? <img src={i.fotos[0]} alt="" loading="lazy" /> : <span className="cursiva" aria-hidden="true">macramê</span>}
+        {i.fotos[0] ? <img src={i.fotos[0]} alt="" loading="lazy" /> : <SemImagem />}
         {i.prontaEntrega && i.disponiveis > 0 && <span className="selo selo-oliva peca-selo">Pronta-entrega</span>}
       </span>
       <span className="peca-info">
@@ -42,7 +43,7 @@ export function DetalhePeca({ i, whatsapp, aoFechar }) {
       <div className="peca-detalhe">
         <div style={{ minWidth: 0 }}>
           <div className="peca-foto grande">
-            {i.fotos[foto] ? <img src={i.fotos[foto]} alt={`${i.nome}, foto ${foto + 1}`} /> : <span className="cursiva" aria-hidden="true">macramê</span>}
+            {i.fotos[foto] ? <img src={i.fotos[foto]} alt={`${i.nome}, foto ${foto + 1}`} /> : <SemImagem />}
           </div>
           {i.fotos.length > 1 && (
             <div className="miniaturas" role="group" aria-label="Fotos da peça">

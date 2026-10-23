@@ -107,6 +107,15 @@ O estoque de material pode ficar negativo; nesse caso aparece como "registre a c
   - O preço é o que ela cobra: peça de pronta-entrega mostra o valor e as unidades disponíveis; peça sob encomenda mostra "a partir de".
   - O botão abre o WhatsApp já com o nome da peça. Custos e materiais nunca vão para o site.
 
+### Identidade visual
+
+- **Logos:** as versões do manual (empilhada, horizontal, circular e símbolo, cada uma também na versão clara para fundo escuro) estão em vetor em `frontend/public/marca/`. Foram extraídas direto do PDF do manual, com fundo transparente.
+- **Onde aparecem:** topo do site e das páginas internas, menu do sistema, login, rodapé, painel, favicon e imagem de compartilhamento (`compartilhar.jpg`).
+- **PDFs:** proposta, contrato, relatório e certificado usam a logo (PNG em `backend/src/main/resources/marca/`).
+- **Cores:** marrom `#8D553A`, bege `#E3C4A8`, off-white `#F9F6EF` e verde `#00674E`, aplicados nos tokens do estilo clay em `estilo.css`. O manual escreve o verde como `#0067AE`, mas o RGB indicado (0, 103, 78) é `#00674E`.
+- **Gráficos:** usam uma variação das cores, validada para daltonismo, porque o marrom e o verde da marca se confundem.
+- **Fonte:** Montserrat no site, no sistema e nos PDFs (licença OFL, arquivos em `fontes/`). A Pinkerston é comercial e aparece só dentro das logos.
+
 ## Rodar no computador (Windows + NetBeans)
 
 **Pré-requisitos:**

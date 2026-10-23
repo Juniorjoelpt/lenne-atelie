@@ -1,23 +1,32 @@
-/* Lenne Carvalho Ateliê — estilo "clay" nas cores da marca */
+/*
+ * Lenne Carvalho Ateliê — estilo "clay" com a identidade visual do ateliê:
+ * marrom #8D553A, bege #E3C4A8, off-white #F9F6EF e verde #00674E; texto em Montserrat.
+ * (Os nomes "terra" e "oliva" ficaram das versões anteriores: terra = marrom da marca, oliva = verde da marca.)
+ */
 :root {
-  --fundo: #F3EADB;
-  --cru: #FBF6EE;
-  --creme: #F6F0E6;
-  --afundado: #F1E8D9;
-  --areia: #E8DCC8;
-  --marrom: #3B2A20;
-  --marrom-2: #5A4636;
-  --marrom-3: #6B5848;
-  --terra: #9A4A2A;
-  --terra-escuro: #6E3219;
-  --terra-vivo: #C9693F;
-  --terra-claro: #F2D2BF;
-  --terra-texto: #7A3A1E;
-  --oliva: #5E6B3F;
-  --oliva-medio: #A9B48A;
-  --oliva-claro: #E3E8D2;
-  --oliva-menu: #D5DCBE;
-  --oliva-texto: #3F4A22;
+  --marca-marrom: #8D553A;
+  --marca-bege: #E3C4A8;
+  --marca-offwhite: #F9F6EF;
+  --marca-verde: #00674E;
+
+  --fundo: #F2EBE1;
+  --cru: #F9F6EF;
+  --creme: #F6F1E9;
+  --afundado: #EEE6DA;
+  --areia: #EBDCCB;
+  --marrom: #3A281E;
+  --marrom-2: #5C4535;
+  --marrom-3: #6B5646;
+  --terra: #8D553A;
+  --terra-escuro: #693D28;
+  --terra-vivo: #A8694A;
+  --terra-claro: #F0DCCA;
+  --terra-texto: #6E3F29;
+  --oliva: #00674E;
+  --oliva-medio: #A9CDBF;
+  --oliva-claro: #DCEDE5;
+  --oliva-menu: #EBDCCB;
+  --oliva-texto: #00513D;
   --ocre: #C99A3E;
   --ocre-claro: #F1E1B9;
   --ocre-texto: #6B4E12;
@@ -27,8 +36,8 @@
   --sombra: 10px 12px 26px rgba(110, 80, 50, .16), inset 3px 3px 0 rgba(255, 255, 255, .65), inset -4px -6px 12px rgba(110, 80, 50, .10);
   --sombra-p: 4px 6px 12px rgba(110, 80, 50, .16), inset 2px 2px 0 rgba(255, 255, 255, .7), inset -2px -3px 6px rgba(110, 80, 50, .10);
   --afunda: inset 3px 4px 8px rgba(110, 80, 50, .14), inset -2px -2px 0 rgba(255, 255, 255, .7);
-  --fonte: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --cursiva: 'Allura', cursive;
+  --fonte: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --cursiva: 'Montserrat', system-ui, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -47,13 +56,20 @@ a:hover { color: var(--terra-escuro); }
 img { max-width: 100%; display: block; }
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--oliva); outline-offset: 3px; }
-h1, h2, h3, h4 { margin: 0; line-height: 1.15; font-weight: 900; }
+h1, h2, h3, h4 { margin: 0; line-height: 1.15; font-weight: 800; letter-spacing: -.3px; }
 p { margin: 0; }
 
 .clay { box-shadow: var(--sombra); }
 .clay-sm { box-shadow: var(--sombra-p); }
 .press { box-shadow: var(--afunda); }
 .cursiva { font-family: var(--cursiva); font-weight: 400; color: var(--terra); }
+/* Logo do ateliê (SVG em /marca) */
+.logo { display: block; height: auto; max-width: 100%; }
+/* Lugar de foto vazia: o símbolo da marca, bem suave */
+.sem-imagem { width: 38%; max-width: 120px; opacity: .45; }
+/* Estampa de corações do manual da marca */
+.estampa { position: relative; isolation: isolate; }
+.estampa::before { content: ''; position: absolute; inset: 0; z-index: -1; background: url('/marca/simbolo.svg') 0 0 / 46px 46px repeat; opacity: .09; border-radius: inherit; pointer-events: none; }
 .sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 .mudo { color: var(--marrom-3); }
 .forte { font-weight: 800; }
@@ -240,15 +256,16 @@ select.entrada { padding-right: 36px; }
 .sobretitulo { font-size: 14px; letter-spacing: 3px; text-transform: uppercase; color: var(--oliva); font-weight: 900; }
 .titulo-secao { font-size: 38px; margin-top: 6px; }
 .cabecalho { background: var(--cru); border-radius: 999px; padding: 10px 12px 10px 26px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; box-shadow: var(--sombra); }
-.marca { text-decoration: none; color: var(--marrom); display: flex; align-items: baseline; gap: 8px; }
-.marca strong { font-size: 23px; font-weight: 900; }
-.marca span { font-family: var(--cursiva); font-size: 28px; color: var(--terra); }
+.marca { text-decoration: none; display: flex; align-items: center; }
+.marca .logo { height: 44px; width: auto; }
+@media (max-width: 560px) { .marca .logo { height: 36px; } }
 .cabecalho nav { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; font-size: 15px; font-weight: 800; }
 .cabecalho nav a:not(.btn) { color: var(--marrom); text-decoration: none; padding: 10px 12px; border-radius: 999px; }
 .cabecalho nav a:not(.btn):hover { background: var(--afundado); }
 .heroi { background: var(--terra-claro); border-radius: 44px; padding: 48px; display: flex; flex-wrap: wrap; gap: 40px; align-items: center; box-shadow: var(--sombra); }
 .heroi h1 { font-size: clamp(36px, 5vw, 54px); line-height: 1.08; letter-spacing: -.5px; }
-.heroi .lema { font-family: var(--cursiva); font-size: 42px; color: var(--terra); line-height: 1.1; margin-bottom: 6px; }
+.heroi .lema { font-size: 15px; letter-spacing: 4px; text-transform: uppercase; color: var(--terra); font-weight: 700; margin-bottom: 14px; }
+.assinatura { font-weight: 500; font-style: italic; color: var(--terra); letter-spacing: .2px; }
 .heroi-fotos { flex: 1 1 360px; min-width: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .heroi-fotos > * { border-radius: 32px; box-shadow: var(--sombra-p); overflow: hidden; min-height: 200px; display: flex; align-items: center; justify-content: center; text-align: center; font-weight: 700; font-size: 14px; padding: 0; }
 .heroi-fotos > :first-child { grid-row: span 2; min-height: 416px; border-radius: 200px 200px 32px 32px; }
@@ -265,14 +282,14 @@ select.entrada { padding-right: 36px; }
 .galeria figcaption { padding: 12px 8px 4px; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 900; }
 .oficinas-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 22px; margin-top: 28px; }
 .oficina-card { background: var(--cru); border-radius: 30px; padding: 26px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--sombra-p); }
-.passos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; font-weight: 700; color: #2E3518; }
+.passos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; font-weight: 700; color: var(--oliva-texto); }
 .passos li { display: flex; gap: 12px; align-items: flex-start; }
 .passos li > span:first-child { flex: 0 0 30px; height: 30px; border-radius: 50%; background: var(--cru); display: flex; align-items: center; justify-content: center; font-weight: 900; box-shadow: var(--sombra-p); }
 .rodape-site { margin-top: 56px; }
 @media (max-width: 720px) {
   .heroi, .bloco { padding: 28px 22px; border-radius: 32px; }
   .cabecalho { border-radius: 30px; }
-  .heroi .lema { font-size: 34px; }
+  .heroi .lema { font-size: 13px; letter-spacing: 3px; }
   .titulo-secao { font-size: 30px; }
   .heroi-fotos > :first-child { min-height: 320px; }
   .secao { padding-top: 52px; }

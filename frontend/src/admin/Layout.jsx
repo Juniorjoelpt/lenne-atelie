@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { api, sessao } from '../api.js';
 import Icone from '../componentes/Icone.jsx';
 import { primeiroNome } from '../util.js';
+import Marca from '../componentes/Marca.jsx';
 
 // [caminho, ícone, rótulo, fim exato, ajudante vê]
 const MENU = [
@@ -62,8 +63,8 @@ export default function Layout() {
       {aberto && <div className="fundo-menu" onClick={() => setAberto(false)} />}
       <aside className={`lateral ${aberto ? 'aberta' : ''}`} aria-label="Menu do sistema">
         <div className="lateral-perfil">
-          <div className="avatar" aria-hidden="true">{(nome || 'L').charAt(0)}</div>
-          <p style={{ fontSize: 22, fontWeight: 900 }}>Olá, {primeiroNome(nome) || 'Lenne'}!</p>
+          <Link to="/admin" aria-label="Painel do ateliê"><Marca variante="empilhada" decorativa style={{ width: 176 }} /></Link>
+          <p style={{ fontSize: 18, fontWeight: 800 }}>Olá, {primeiroNome(nome) || 'Lenne'}!</p>
           {ajudante && <span className="selo selo-areia" style={{ alignSelf: 'center' }}>Acesso de ajudante</span>}
         </div>
         <nav>

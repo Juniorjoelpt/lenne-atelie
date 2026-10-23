@@ -1,3 +1,4 @@
+import { SemImagem } from '../componentes/Marca.jsx';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api.js';
@@ -30,12 +31,12 @@ export default function CursoPagina() {
           <>
             <section className="bloco curso-topo" style={{ background: 'var(--oliva-menu)' }}>
               <div className="curso-capa">
-                {c.capa ? <img src={c.capa} alt="" /> : <span className="cursiva" aria-hidden="true">macramê</span>}
+                {c.capa ? <img src={c.capa} alt="" /> : <SemImagem />}
               </div>
               <div style={{ flex: '1 1 380px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <p className="sobretitulo" style={{ color: 'var(--oliva-texto)' }}>Curso online{c.nivel ? ` · ${c.nivel}` : ''}</p>
                 <h1 className="titulo-secao" style={{ margin: 0 }}>{c.titulo}</h1>
-                {c.resumo && <p style={{ fontSize: 18, fontWeight: 700, color: '#2E3518' }}>{c.resumo}</p>}
+                {c.resumo && <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--oliva-texto)' }}>{c.resumo}</p>}
                 <p className="forte" style={{ color: 'var(--oliva-texto)' }}>
                   {c.totalAulas} {c.totalAulas === 1 ? 'aula' : 'aulas'}{duracaoTexto(c.duracaoTotal) ? ` · ${duracaoTexto(c.duracaoTotal)} de vídeo` : ''} · assista quando e quantas vezes quiser
                 </p>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Icone from '../componentes/Icone.jsx';
+import Marca from '../componentes/Marca.jsx';
 
 const EXTENSO = (iso) => new Date(`${iso}T12:00`).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -26,7 +27,7 @@ export default function Certificado() {
   return (
     <main className="cert-pagina">
       <div className="cert-caixa">
-        <a href="/" className="marca" style={{ justifyContent: 'center' }}><strong>Lenne Carvalho</strong><span>ateliê</span></a>
+        <a href="/" className="marca" style={{ justifyContent: 'center' }}><Marca variante="empilhada" style={{ width: 200, height: 'auto' }} /></a>
         {erro && <div className="aviso aviso-erro" role="alert">{erro}</div>}
         {!erro && !c && <p className="carregando">Carregando…</p>}
         {c && (

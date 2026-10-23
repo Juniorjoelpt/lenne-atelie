@@ -195,7 +195,7 @@ public class ExportacaoService {
             fCab.setBold(true);
             XSSFCellStyle c = wb.createCellStyle();
             c.setFont(fCab);
-            c.setFillForegroundColor(new XSSFColor(new byte[]{(byte) 0xF2, (byte) 0xD2, (byte) 0xBF}, null));
+            c.setFillForegroundColor(new XSSFColor(new byte[]{(byte) 0xF0, (byte) 0xDC, (byte) 0xCA}, null));
             c.setFillPattern(FillPatternType.SOLID_FOREGROUND);
             c.setBorderBottom(BorderStyle.THIN);
             cab = c;

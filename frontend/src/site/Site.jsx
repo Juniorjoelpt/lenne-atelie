@@ -3,6 +3,7 @@ import { api } from '../api.js';
 import Icone from '../componentes/Icone.jsx';
 import { CATEGORIAS_PORTFOLIO, TIPOS_PECA, dataHora, hojeIso, linkWhats, moeda, telefone } from '../util.js';
 import Inscricao from './Inscricao.jsx';
+import Marca, { SemImagem } from '../componentes/Marca.jsx';
 import { Link } from 'react-router-dom';
 import { CartaoPeca, DetalhePeca } from './Catalogo.jsx';
 import { duracaoTexto } from './BlocoPix.jsx';
@@ -38,7 +39,7 @@ export default function Site() {
     <div className="site">
       <header className="envolve">
         <div className="cabecalho">
-          <a href="#inicio" className="marca"><strong>Lenne Carvalho</strong><span>ateliê</span></a>
+          <a href="#inicio" className="marca"><Marca variante="horizontal" /></a>
           <nav aria-label="Principal">
             {catalogo.length > 0 ? <Link to="/catalogo">Catálogo</Link> : <a href="#servicos">Serviços</a>}
             <a href="#portfolio">Portfólio</a>
@@ -68,7 +69,7 @@ export default function Site() {
             <div className="heroi-fotos" aria-hidden={fotos.length === 0}>
               {[0, 1, 2].map((i) => {
                 const f = fotos[i];
-                const fundos = ['#F6E2D3', 'var(--oliva-claro)', 'var(--ocre-claro)'];
+                const fundos = ['var(--cru)', 'var(--areia)', 'var(--oliva-claro)'];
                 return f ? (
                   <div key={i}><img src={f.url} alt={f.titulo} loading={i ? 'lazy' : 'eager'} /></div>
                 ) : (
@@ -116,7 +117,7 @@ export default function Site() {
           <div className="bloco" style={{ background: 'var(--oliva-menu)' }}>
             <p className="sobretitulo" style={{ color: 'var(--oliva-texto)' }}>Agenda</p>
             <h2 className="titulo-secao">Próximas oficinas</h2>
-            <p style={{ marginTop: 8, maxWidth: 640, color: '#2E3518', fontWeight: 600 }}>
+            <p style={{ marginTop: 8, maxWidth: 640, color: 'var(--oliva-texto)', fontWeight: 600 }}>
               Turmas pequenas, material incluso e você sai com a sua peça pronta. A vaga é confirmada após o Pix da inscrição.
             </p>
             <div className="oficinas-grade">
@@ -160,8 +161,8 @@ export default function Site() {
 
         <section id="sobre" className="envolve secao">
           <div className="bloco" style={{ background: 'var(--areia)', display: 'flex', flexWrap: 'wrap', gap: 40, alignItems: 'center' }}>
-            <div className="clay-sm" style={{ flex: '0 1 280px', minWidth: 200, aspectRatio: '1', borderRadius: '50%', background: 'var(--creme)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-              <span className="cursiva" style={{ fontSize: 96, lineHeight: 1 }} aria-hidden="true">Lenne</span>
+            <div className="clay-sm" style={{ flex: '0 1 280px', minWidth: 200, aspectRatio: '1', borderRadius: '50%', background: 'var(--cru)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+              <Marca variante="circular" decorativa style={{ width: '68%' }} />
             </div>
             <div style={{ flex: '1 1 440px', minWidth: 0 }}>
               <p className="sobretitulo">Quem sou</p>
@@ -178,7 +179,7 @@ export default function Site() {
             <div className="cursos-grade">
               {cursos.map((c) => (
                 <Link key={c.id} to={`/cursos/${c.id}`} className="curso-card">
-                  <span className="curso-capa">{c.capa ? <img src={c.capa} alt="" loading="lazy" /> : <span className="cursiva" aria-hidden="true">macramê</span>}</span>
+                  <span className="curso-capa">{c.capa ? <img src={c.capa} alt="" loading="lazy" /> : <SemImagem />}</span>
                   <span style={{ padding: '16px 18px 20px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {c.nivel && <span className="selo selo-oliva" style={{ alignSelf: 'flex-start' }}>{c.nivel}</span>}
                     <span style={{ fontSize: 21, fontWeight: 900 }}>{c.titulo}</span>
@@ -196,8 +197,8 @@ export default function Site() {
         ) : (
         <section className="envolve" style={{ paddingTop: 56 }} aria-labelledby="cursos-titulo">
           <div className="bloco" style={{ background: 'var(--oliva-medio)', display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center', padding: '30px 36px' }}>
-            <div style={{ flex: '1 1 360px', minWidth: 0, color: '#2E3518' }}>
-              <p className="sobretitulo" style={{ color: '#2E3518' }}>Em breve</p>
+            <div style={{ flex: '1 1 360px', minWidth: 0, color: 'var(--oliva-texto)' }}>
+              <p className="sobretitulo" style={{ color: 'var(--oliva-texto)' }}>Em breve</p>
               <h2 id="cursos-titulo" style={{ fontSize: 30, margin: '2px 0 4px' }}>Cursos online de macramê</h2>
               <p style={{ fontWeight: 700 }}>Quer aprender de casa? Entre na lista e seja avisada primeiro.</p>
             </div>
@@ -212,7 +213,8 @@ export default function Site() {
         <div className="bloco" style={{ background: 'var(--cru)', padding: '36px 40px 24px' }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 36, justifyContent: 'space-between' }}>
             <div style={{ flex: '1 1 260px' }}>
-              <p className="marca"><strong>Lenne Carvalho</strong><span>ateliê</span></p>
+              <Marca variante="empilhada" style={{ width: 210 }} />
+              <p className="assinatura" style={{ marginTop: 12 }}>Nós somos a soma dos nossos afetos.</p>
               <p style={{ marginTop: 4, fontWeight: 600, color: 'var(--marrom-2)' }}>Macramê feito à mão · {atelie.cidade || 'São Luís — MA'}</p>
             </div>
             <div style={{ flex: '1 1 220px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -242,19 +244,8 @@ export default function Site() {
 }
 
 function Decoracao({ indice }) {
-  // Desenho de macramê em traço, usado enquanto não há fotos no portfólio.
-  const cores = ['#C9845F', '#7C8A55', '#C99A3E'];
-  return (
-    <svg width="60%" viewBox="0 0 120 150" aria-hidden="true">
-      <rect x="14" y="10" width="92" height="8" rx="4" fill="#B98A5E" />
-      <g stroke="#FBF6EE" strokeWidth="5" strokeLinecap="round" fill="none">
-        <path d="M28 18v34l16 18 16-18 16 18 16-18V18" />
-        <path d="M44 18v26l16 18 16-18V18M60 18v28" />
-        <path d="M44 70v40M60 76v50M76 70v40M28 52v40M92 52v40" />
-      </g>
-      <circle cx="60" cy="62" r="6" fill={cores[indice]} />
-    </svg>
-  );
+  // Enquanto não há fotos no portfólio: o símbolo da marca (o primeiro maior, os outros suaves).
+  return <Marca variante="simbolo" decorativa style={{ width: indice === 0 ? '52%' : '40%', opacity: indice === 0 ? 0.9 : 0.55 }} />;
 }
 
 function Depoimentos({ lista }) {
@@ -372,7 +363,10 @@ function Orcamento({ whatsapp }) {
             onde você pode mandar fotos de referência.
           </p>
         </div>
-        <p className="cursiva" style={{ fontSize: 40, lineHeight: 1.1 }}>Artesanato que abraça</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <Marca variante="simbolo" decorativa style={{ width: 56 }} />
+          <p className="assinatura" style={{ fontSize: 19 }}>Nós somos a soma dos nossos afetos.</p>
+        </div>
       </div>
 
       <div className="bloco" style={{ flex: '1 1 520px', minWidth: 0, background: 'var(--cru)' }}>
