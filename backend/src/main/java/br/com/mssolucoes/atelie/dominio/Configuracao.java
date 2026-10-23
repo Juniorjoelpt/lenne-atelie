@@ -46,6 +46,24 @@ public class Configuracao {
     @Column(name = "sobre_texto", columnDefinition = "TEXT")
     private String sobreTexto;
 
+    // ---- Precificação (só no sistema, nunca no site) ----
+
+    /** Quanto ela quer tirar por mês com o próprio trabalho. */
+    @Column(name = "salario_desejado", nullable = false, precision = 12, scale = 2)
+    private java.math.BigDecimal salarioDesejado = java.math.BigDecimal.ZERO;
+
+    /** Horas dedicadas à produção por mês. */
+    @Column(name = "horas_mes", nullable = false)
+    private int horasMes = 160;
+
+    /** Aluguel, energia, internet, MEI… */
+    @Column(name = "custos_fixos_mensais", nullable = false, precision = 12, scale = 2)
+    private java.math.BigDecimal custosFixosMensais = java.math.BigDecimal.ZERO;
+
+    /** Margem de lucro padrão, em %, aplicada sobre o custo total. */
+    @Column(name = "margem_padrao", nullable = false, precision = 5, scale = 2)
+    private java.math.BigDecimal margemPadrao = java.math.BigDecimal.valueOf(30);
+
     @Column(name = "atualizado_em", nullable = false)
     private LocalDateTime atualizadoEm = LocalDateTime.now();
 }

@@ -20,6 +20,29 @@ Desenvolvido pela MS Soluções Inteligentes.
 6. **Confirmar Pix.** A inscrição fica confirmada, a aluna entra em Clientes e o valor entra no financeiro. Desfazer a confirmação remove o lançamento.
 7. **Materiais.** Em "Comprei", o estoque soma e a compra pode ir para as despesas. Em "Usei", o estoque desconta. Abaixo do mínimo, aparece um aviso no painel.
 
+### Custos, preço e pronta-entrega
+
+1. **Configurações › Precificação.** Ela informa quanto quer ganhar por mês, as horas de produção, os custos fixos e a margem padrão.
+   - O sistema calcula o valor da hora e o custo fixo por hora.
+   - Esses dados não aparecem no site.
+2. **Produtos (fichas técnicas).** Cada peça tem materiais por unidade, horas de trabalho e embalagem. O preço é montado assim:
+   ```
+   custo = materiais + horas × valor da hora + horas × custo fixo por hora + embalagem
+   preço sugerido = custo × (1 + margem), arredondado para cima no real
+   ```
+   A ficha mostra o lucro por peça e quanto rende a hora com o preço que ela cobra.
+3. **Encomenda com ficha.** Os materiais da ficha × quantidade saem do estoque sozinhos quando a encomenda entra em produção, uma única vez.
+   - Material extra pode ser registrado na encomenda.
+   - Um material pode ser devolvido ao estoque.
+   - A encomenda mostra os custos reais, o ganho, o valor por hora frente à meta e o lucro.
+4. **Comprei material com valor.** O custo por unidade passa a ser o da última compra, e as fichas se atualizam.
+5. **Pronta-entrega.**
+   - "Produzi" soma peças ao estoque e baixa os materiais.
+   - Em **Vendas**, o caixa rápido (feito para o celular, na feira) tira as peças do estoque e lança a entrada no financeiro.
+   - Cancelar a venda devolve as peças e remove a entrada.
+
+O estoque de material pode ficar negativo; nesse caso aparece como "registre a compra". Assim a produção nunca fica travada por um cadastro desatualizado.
+
 ## Rodar no computador (Windows + NetBeans)
 
 **Pré-requisitos:**
@@ -87,6 +110,18 @@ Os testes cobrem:
 - inscrição com Pix e lista de espera
 - materiais
 - envio de fotos
+- cálculo da ficha técnica e do preço sugerido
+- baixa automática de materiais e lucro da encomenda
+- venda de pronta-entrega e cancelamento
+
+## Atualizar a VPS
+
+```
+git pull
+docker compose up -d --build
+```
+
+O Flyway aplica sozinho as mudanças no banco, como a V2 desta etapa, sem apagar dados.
 
 ## Segurança
 

@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { api } from '../api.js';
 import Icone from '../componentes/Icone.jsx';
 import { Campo, Confirmar, Estado, Modal, ModalForm, Selo, lerForm, useCarregar, useToast, Vazio } from '../componentes/ui.jsx';
-import { FORMAS, FRENTES, STATUS_ENCOMENDA, data, hojeIso, linkWhats, moeda, telefone } from '../util.js';
+import { FORMAS, FRENTES, STATUS_ENCOMENDA, data, hojeIso, linkWhats, moeda, moedaUnit, qtd, qtdUn, telefone } from '../util.js';
+import CamposFicha from '../componentes/CamposFicha.jsx';
 import { Topo } from './Layout.jsx';
 import { Info } from './Orcamentos.jsx';
 
@@ -34,7 +35,7 @@ export default function Encomendas() {
                 <tbody>
                   {dados?.map((e) => (
                     <tr key={e.id} className="clicavel" tabIndex={0} onClick={() => setAberta(e)} onKeyDown={(k) => k.key === 'Enter' && setAberta(e)}>
-                      <td><strong>{e.descricao}</strong><br /><span className="mudo" style={{ fontSize: 14 }}>{FRENTES[e.frente]}</span></td>
+                      <td><strong>{e.descricao}</strong><br /><span className="mudo" style={{ fontSize: 14 }}>{FRENTES[e.frente]}{e.produtoNome ? ` · ${e.quantidade}× ${e.produtoNome}` : ''}</span></td>
                       <td>{e.clienteNome}</td>
                       <td>{data(e.prazoEntrega)}</td>
                       <td className="num">{moeda(e.valorTotal)}</td>
@@ -69,7 +70,7 @@ function FormEncomenda({ encomenda: e, aoFechar, aoSalvar }) {
   }
   return (
     <ModalForm titulo={e.id ? 'Editar encomenda' : 'Nova encomenda'} aoFechar={aoFechar} aoSalvar={async (fd) => {
-      const d = lerForm(fd, ['valorTotal', 'valorSinal', 'clienteId']);
+      const d = lerForm(fd, ['valorTotal', 'valorSinal', 'clienteId', 'produtoId', 'quantidade', 'horasTrabalhadas']);
       if (e.id) await api.put(`/api/encomendas/${e.id}`, d);
       else await api.post('/api/encomendas', d);
       aoSalvar();
@@ -79,8 +80,10 @@ function FormEncomenda({ encomenda: e, aoFechar, aoSalvar }) {
       <Campo rotulo="Descrição" nome="descricao" defaultValue={e.descricao} required maxLength={200} inteiro />
       <Campo rotulo="Frente" nome="frente" opcoes={FRENTES} defaultValue={e.frente || 'ENCOMENDA'} />
       <Campo rotulo="Status" nome="status" opcoes={Object.fromEntries(Object.entries(STATUS_ENCOMENDA).map(([k, [r]]) => [k, r]))} defaultValue={e.status || 'AGUARDANDO_SINAL'} />
-      <Campo rotulo="Valor total (R$)" nome="valorTotal" tipo="number" min="0" step="0.01" defaultValue={e.valorTotal} required />
+      <CamposFicha produtoId={e.produtoId} quantidade={e.quantidade} valorTotal={e.valorTotal} travado={e.materiaisBaixados && !!e.produtoId} />
       <Campo rotulo="Sinal (R$)" nome="valorSinal" tipo="number" min="0" step="0.01" defaultValue={e.valorSinal ?? 0} />
+      <Campo rotulo="Horas trabalhadas" nome="horasTrabalhadas" tipo="number" min="0" step="0.25" defaultValue={e.horasTrabalhadas}
+        dica="Deixe vazio para usar as horas da ficha." />
       <Campo rotulo="Prazo de entrega" nome="prazoEntrega" tipo="date" defaultValue={e.prazoEntrega} />
       <Campo rotulo="Observações" nome="observacoes" linhas={3} defaultValue={e.observacoes} inteiro />
     </ModalForm>
@@ -162,6 +165,8 @@ function Detalhe({ id, aoFechar, aoEditar }) {
               <Info rotulo="Sinal combinado" valor={moeda(e.valorSinal)} />
               {e.observacoes && <div className="inteiro"><Info rotulo="Observações" valor={e.observacoes} /></div>}
             </div>
+            <Custos e={e} />
+            <MateriaisUsados e={e} aoMudar={() => { recarregar(); }} />
             <h3 style={{ fontSize: 18, margin: '24px 0 8px' }}>Pagamentos</h3>
             {!pagamentos?.length ? <p className="mudo forte">Nenhum pagamento registrado.</p> : (
               <ul className="lista-linhas">
@@ -174,5 +179,113 @@ function Detalhe({ id, aoFechar, aoEditar }) {
         )}
       </Estado>
     </Modal>
+  );
+}
+
+function Custos({ e }) {
+  const c = e.custos;
+  const meta = Number(c.valorHoraDesejado);
+  const porHora = c.ganhoPorHora != null ? Number(c.ganhoPorHora) : null;
+  const bateu = porHora != null && meta > 0 && porHora >= meta;
+  return (
+    <section aria-labelledby={`custos-${e.id}`} style={{ marginTop: 24 }}>
+      <h3 id={`custos-${e.id}`} style={{ fontSize: 18, marginBottom: 10 }}>
+        Custos e lucro {c.estimado && <span className="selo selo-ocre" style={{ marginLeft: 6 }}>materiais estimados pela ficha</span>}
+      </h3>
+      <div className="custos-grade">
+        <div><p>Valor cobrado</p><p>{moeda(e.valorTotal)}</p></div>
+        <div><p>Materiais</p><p>{moeda(c.custoMateriais)}</p></div>
+        <div><p>Custos fixos ({qtd(c.horas)} h)</p><p>{moeda(c.custoFixo)}</p></div>
+        {Number(c.outrosCustos) > 0 && <div><p>Embalagem e outros</p><p>{moeda(c.outrosCustos)}</p></div>}
+        <div style={{ background: 'var(--oliva-claro)' }}><p>Seu ganho</p><p>{moeda(c.ganho)}</p></div>
+        <div style={{ background: porHora == null ? 'var(--cru)' : bateu ? 'var(--oliva-claro)' : 'var(--terra-claro)' }}>
+          <p>Por hora trabalhada</p>
+          <p>{porHora == null ? '—' : moeda(porHora)}</p>
+        </div>
+      </div>
+      <p className="mudo forte" style={{ fontSize: 14, marginTop: 8 }}>
+        {porHora == null ? 'Informe as horas trabalhadas (ou use uma ficha) para ver quanto rendeu sua hora.'
+          : meta > 0 ? (bateu
+            ? `Acima da sua meta de ${moeda(meta)}/h: sobra um lucro de ${moeda(c.lucro)} além do seu pagamento.`
+            : `Abaixo da sua meta de ${moeda(meta)}/h: faltaram ${moeda(-c.lucro)} para pagar todas as suas horas.`)
+          : 'Configure sua meta de valor da hora em Configurações.'}
+      </p>
+    </section>
+  );
+}
+
+function MateriaisUsados({ e, aoMudar }) {
+  const lista = useCarregar(() => api.get(`/api/encomendas/${e.id}/consumos`), [e.id, e.materiaisBaixados]);
+  const materiais = useCarregar(() => api.get('/api/materiais'));
+  const [novo, setNovo] = useState(null);
+  const [erro, setErro] = useState(null);
+  const toast = useToast();
+  const cancelada = e.status === 'CANCELADA';
+
+  async function acao(fn, msg) {
+    setErro(null);
+    try { await fn(); toast(msg); lista.recarregar(); aoMudar(); } catch (err) { setErro(err.message); }
+  }
+
+  return (
+    <section aria-labelledby={`mat-${e.id}`} style={{ marginTop: 24 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <h3 id={`mat-${e.id}`} style={{ fontSize: 18 }}>Materiais usados</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {e.produtoId && !e.materiaisBaixados && !cancelada && (
+            <button type="button" className="btn btn-oliva btn-p"
+              onClick={() => acao(() => api.post(`/api/encomendas/${e.id}/baixar-ficha`), 'Materiais da ficha baixados do estoque.')}>
+              Baixar materiais da ficha agora
+            </button>
+          )}
+          {!cancelada && !novo && <button type="button" className="btn btn-claro btn-p" onClick={() => setNovo({ materialId: '', quantidade: '' })}><Icone nome="mais" tamanho={16} largura={3} />Material extra</button>}
+        </div>
+      </div>
+      {e.produtoId && !e.materiaisBaixados && (
+        <p className="mudo forte" style={{ fontSize: 14 }}>Os materiais da ficha saem do estoque sozinhos quando a encomenda entra em produção.</p>
+      )}
+      {erro && <div className="aviso aviso-erro" role="alert" style={{ margin: '8px 0' }}>{erro}</div>}
+      {novo && (
+        <form style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-end', margin: '8px 0' }}
+          onSubmit={(ev) => {
+            ev.preventDefault();
+            acao(async () => {
+              await api.post(`/api/encomendas/${e.id}/consumos`, { materialId: Number(novo.materialId) || null, quantidade: Number(String(novo.quantidade).replace(',', '.')) || null });
+              setNovo(null);
+            }, 'Material registrado e baixado do estoque.');
+          }}>
+          <div className="campo" style={{ flex: '2 1 200px' }}>
+            <label htmlFor={`cm-m-${e.id}`}>Material</label>
+            <select id={`cm-m-${e.id}`} className="entrada" value={novo.materialId} onChange={(ev) => setNovo({ ...novo, materialId: ev.target.value })} required>
+              <option value="">Escolha…</option>
+              {(materiais.dados || []).map((m) => <option key={m.id} value={m.id}>{m.nome} ({qtdUn(m.quantidade, m.unidade)} em estoque)</option>)}
+            </select>
+          </div>
+          <div className="campo" style={{ flex: '1 1 100px' }}>
+            <label htmlFor={`cm-q-${e.id}`}>Quantidade</label>
+            <input id={`cm-q-${e.id}`} className="entrada" type="number" min="0" step="0.001" value={novo.quantidade} onChange={(ev) => setNovo({ ...novo, quantidade: ev.target.value })} required />
+          </div>
+          <button type="submit" className="btn btn-oliva">Registrar</button>
+          <button type="button" className="btn btn-fantasma" onClick={() => setNovo(null)}>Cancelar</button>
+        </form>
+      )}
+      {!lista.dados?.length ? <p className="mudo forte">{lista.carregando ? 'Carregando…' : 'Nenhum material baixado ainda.'}</p> : (
+        <ul className="lista-linhas">
+          {lista.dados.map((c) => (
+            <li key={c.id}>
+              <div className="info">
+                <p>{c.materialNome}: {qtdUn(c.quantidade, c.unidade)}</p>
+                <p>{moedaUnit(c.custoUnitario)}/{c.unidade} · {c.origem === 'FICHA_ENCOMENDA' ? 'pela ficha' : 'extra'} · {data(c.data)}</p>
+              </div>
+              <strong className="num">{moeda(c.custoTotal)}</strong>
+              {!cancelada && (
+                <button type="button" className="btn btn-fantasma btn-icone btn-p" aria-label={`Devolver ${c.materialNome} ao estoque`}
+                  onClick={() => acao(() => api.del(`/api/consumos/${c.id}`), 'Material devolvido ao estoque.')}><Icone nome="fechar" tamanho={16} /></button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

@@ -3,15 +3,18 @@ package br.com.mssolucoes.atelie.servico;
 import br.com.mssolucoes.atelie.dominio.Encomenda;
 import br.com.mssolucoes.atelie.dominio.Enums.*;
 import br.com.mssolucoes.atelie.dominio.Lancamento;
+import br.com.mssolucoes.atelie.dominio.Produto;
 import br.com.mssolucoes.atelie.dto.Dtos.*;
 import br.com.mssolucoes.atelie.repositorio.EncomendaRepository;
 import br.com.mssolucoes.atelie.repositorio.LancamentoRepository;
+import br.com.mssolucoes.atelie.repositorio.ProdutoRepository;
 import br.com.mssolucoes.atelie.web.NaoEncontradoException;
 import br.com.mssolucoes.atelie.web.RegraNegocioException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.EnumSet;
 import java.util.List;
@@ -27,11 +30,18 @@ public class EncomendaService {
     private final EncomendaRepository repo;
     private final LancamentoRepository lancamentos;
     private final ClienteService clientes;
+    private final ProdutoRepository produtos;
+    private final ConsumoService consumos;
+    private final PrecificacaoService precificacao;
 
-    public EncomendaService(EncomendaRepository repo, LancamentoRepository lancamentos, ClienteService clientes) {
+    public EncomendaService(EncomendaRepository repo, LancamentoRepository lancamentos, ClienteService clientes,
+                            ProdutoRepository produtos, ConsumoService consumos, PrecificacaoService precificacao) {
         this.repo = repo;
         this.lancamentos = lancamentos;
         this.clientes = clientes;
+        this.produtos = produtos;
+        this.consumos = consumos;
+        this.precificacao = precificacao;
     }
 
     @Transactional(readOnly = true)
@@ -65,7 +75,7 @@ public class EncomendaService {
         if (r.status() != null) {
             e.setStatus(r.status());
         }
-        return paraResp(repo.save(e));
+        return salvarEProcessar(e);
     }
 
     @Transactional
@@ -75,13 +85,21 @@ public class EncomendaService {
         if (r.status() != null) {
             e.setStatus(r.status());
         }
-        return paraResp(repo.save(e));
+        return salvarEProcessar(e);
     }
 
     @Transactional
     public EncomendaResp mudarStatus(Long id, StatusEncomenda status) {
         Encomenda e = buscar(id);
         e.setStatus(status);
+        return salvarEProcessar(e);
+    }
+
+    /** Salva e, se a peça entrou em produção, baixa os materiais da ficha. */
+    @Transactional
+    public EncomendaResp salvarEProcessar(Encomenda e) {
+        repo.save(e);
+        consumos.aposMudarStatus(e);
         return paraResp(repo.save(e));
     }
 
@@ -113,9 +131,36 @@ public class EncomendaService {
         BigDecimal novoPago = pago.add(r.valor());
         if (e.getStatus() == StatusEncomenda.AGUARDANDO_SINAL && novoPago.compareTo(e.getValorSinal()) >= 0) {
             e.setStatus(StatusEncomenda.EM_PRODUCAO);
-            repo.save(e);
+            return salvarEProcessar(e);
         }
         return paraResp(e);
+    }
+
+    // ---------- Materiais usados ----------
+
+    @Transactional(readOnly = true)
+    public List<ConsumoResp> consumos(Long id) {
+        buscar(id);
+        return consumos.daEncomenda(id);
+    }
+
+    @Transactional
+    public ConsumoResp registrarConsumo(Long id, ConsumoReq r) {
+        return consumos.registrarManual(buscar(id), r.materialId(), r.quantidade());
+    }
+
+    /** Baixa a ficha agora, sem esperar a mudança de status. */
+    @Transactional
+    public EncomendaResp baixarFicha(Long id) {
+        Encomenda e = buscar(id);
+        if (e.getProduto() == null) {
+            throw new RegraNegocioException("Esta encomenda não tem ficha técnica.");
+        }
+        if (e.isMateriaisBaixados()) {
+            throw new RegraNegocioException("Os materiais da ficha já foram baixados.");
+        }
+        consumos.baixarFicha(e);
+        return paraResp(repo.save(e));
     }
 
     @Transactional
@@ -124,6 +169,7 @@ public class EncomendaService {
         if (!lancamentos.findByEncomendaIdOrderByDataAsc(id).isEmpty()) {
             throw new RegraNegocioException("Esta encomenda tem pagamentos registrados. Cancele em vez de excluir.");
         }
+        consumos.estornarTudo(id);
         repo.delete(e);
     }
 
@@ -136,9 +182,20 @@ public class EncomendaService {
         if (sinal.compareTo(r.valorTotal()) > 0) {
             throw new RegraNegocioException("O sinal não pode ser maior que o valor total.");
         }
+        Produto novo = r.produtoId() == null ? null
+                : produtos.findById(r.produtoId()).orElseThrow(() -> new NaoEncontradoException("Peça"));
+        int qtd = r.quantidade() == null ? 1 : r.quantidade();
+        if (e.isMateriaisBaixados() && e.getProduto() != null
+                && (novo == null || !novo.getId().equals(e.getProduto().getId()) || qtd != e.getQuantidade())) {
+            throw new RegraNegocioException("Os materiais da ficha já foram baixados. Para trocar a ficha ou a "
+                    + "quantidade, remova antes os materiais usados na encomenda.");
+        }
         e.setCliente(clientes.buscar(r.clienteId()));
         e.setDescricao(r.descricao().trim());
         e.setFrente(r.frente());
+        e.setProduto(novo);
+        e.setQuantidade(qtd);
+        e.setHorasTrabalhadas(r.horasTrabalhadas());
         e.setValorTotal(r.valorTotal());
         e.setValorSinal(sinal);
         e.setPrazoEntrega(r.prazoEntrega());
@@ -153,14 +210,39 @@ public class EncomendaService {
         };
     }
 
+    /** Custos reais (ou estimados pela ficha, se ainda não baixou) e quanto sobrou. */
+    private CustosEncomenda custos(Encomenda e) {
+        var par = precificacao.parametros();
+        Produto p = e.getProduto();
+        BigDecimal qtd = BigDecimal.valueOf(e.getQuantidade());
+        BigDecimal materiais = e.getId() == null ? BigDecimal.ZERO : consumos.custoDaEncomenda(e.getId());
+        boolean estimado = false;
+        if (p != null && !e.isMateriaisBaixados()) {
+            materiais = materiais.add(PrecificacaoService.custoMateriais(p).multiply(qtd));
+            estimado = true;
+        }
+        BigDecimal horas = e.getHorasTrabalhadas() != null ? e.getHorasTrabalhadas()
+                : p != null ? p.getHorasMaoObra().multiply(qtd) : BigDecimal.ZERO;
+        BigDecimal fixo = horas.multiply(par.custoFixoHora()).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal outros = p != null ? p.getOutrosCustos().multiply(qtd) : BigDecimal.ZERO;
+        BigDecimal ganho = e.getValorTotal().subtract(materiais).subtract(fixo).subtract(outros);
+        BigDecimal porHora = horas.signum() > 0 ? ganho.divide(horas, 2, RoundingMode.HALF_UP) : null;
+        BigDecimal lucro = ganho.subtract(horas.multiply(par.valorHora())).setScale(2, RoundingMode.HALF_UP);
+        return new CustosEncomenda(materiais.setScale(2, RoundingMode.HALF_UP), horas, fixo, outros, ganho,
+                porHora, par.valorHora(), lucro, estimado);
+    }
+
     public EncomendaResp paraResp(Encomenda e) {
         BigDecimal pago = e.getId() == null ? BigDecimal.ZERO : lancamentos.totalPagoEncomenda(e.getId());
         BigDecimal saldo = e.getStatus() == StatusEncomenda.CANCELADA
                 ? BigDecimal.ZERO : e.getValorTotal().subtract(pago).max(BigDecimal.ZERO);
         var c = e.getCliente();
+        var p = e.getProduto();
         return new EncomendaResp(e.getId(), c.getId(), c.getNome(), c.getWhatsapp(),
                 e.getOrcamento() == null ? null : e.getOrcamento().getId(),
-                e.getDescricao(), e.getFrente(), e.getValorTotal(), e.getValorSinal(), pago, saldo,
-                e.getPrazoEntrega(), e.getStatus(), e.getObservacoes(), e.getCriadoEm());
+                e.getDescricao(), e.getFrente(), p == null ? null : p.getId(), p == null ? null : p.getNome(),
+                e.getQuantidade(), e.getHorasTrabalhadas(), e.isMateriaisBaixados(),
+                e.getValorTotal(), e.getValorSinal(), pago, saldo,
+                e.getPrazoEntrega(), e.getStatus(), e.getObservacoes(), e.getCriadoEm(), custos(e));
     }
 }

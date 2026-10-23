@@ -5,6 +5,7 @@ import Icone from '../componentes/Icone.jsx';
 import { Campo, Confirmar, Estado, Modal, ModalForm, Selo, lerForm, useCarregar, useToast, Vazio } from '../componentes/ui.jsx';
 import { FRENTES, STATUS_ORCAMENTO, TIPOS_PECA, data, linkWhats, moeda, telefone } from '../util.js';
 import { Topo } from './Layout.jsx';
+import CamposFicha from '../componentes/CamposFicha.jsx';
 
 const FILTROS = [['', 'Todos'], ['NOVO', 'Novos'], ['RESPONDIDO', 'Respondidos'], ['APROVADO', 'Aprovados'], ['RECUSADO', 'Recusados']];
 
@@ -103,7 +104,7 @@ function Detalhe({ orcamento: o, aoFechar, aoEditar, aoMudar }) {
   if (aprovar) {
     return (
       <ModalForm titulo="Aprovar e criar encomenda" textoSalvar="Criar encomenda" aoFechar={() => setAprovar(false)} aoSalvar={async (fd) => {
-        const d = lerForm(fd, ['valorTotal', 'valorSinal']);
+        const d = lerForm(fd, ['valorTotal', 'valorSinal', 'produtoId', 'quantidade']);
         await api.post(`/api/orcamentos/${o.id}/aprovar`, d);
         toast('Encomenda criada!');
         aoMudar();
@@ -111,7 +112,7 @@ function Detalhe({ orcamento: o, aoFechar, aoEditar, aoMudar }) {
         <Campo rotulo="Descrição da encomenda" nome="descricao" defaultValue={`${o.tipoPeca}${o.medidas ? ` — ${o.medidas}` : ''}`.slice(0, 200)} required inteiro />
         <Campo rotulo="Frente" nome="frente" opcoes={FRENTES} defaultValue={o.tipoPeca.includes('casamento') ? 'CASAMENTO' : o.tipoPeca.startsWith('Presentes') ? 'PRESENTE' : 'ENCOMENDA'} />
         <Campo rotulo="Prazo de entrega" nome="prazoEntrega" tipo="date" defaultValue={o.dataDesejada} />
-        <Campo rotulo="Valor total (R$)" nome="valorTotal" tipo="number" min="0" step="0.01" defaultValue={o.valorProposto} required />
+        <CamposFicha valorTotal={o.valorProposto} />
         <Campo rotulo="Sinal (R$)" nome="valorSinal" tipo="number" min="0" step="0.01" dica="Deixe 0 se não houver sinal: a encomenda já vai para produção." />
       </ModalForm>
     );

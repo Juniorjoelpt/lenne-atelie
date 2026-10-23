@@ -27,4 +27,6 @@ public interface EncomendaRepository extends JpaRepository<Encomenda, Long> {
     boolean existsByOrcamentoId(Long orcamentoId);
 
     java.util.Optional<Encomenda> findFirstByOrcamentoId(Long orcamentoId);
+
+    boolean existsByProdutoId(Long produtoId);
 }

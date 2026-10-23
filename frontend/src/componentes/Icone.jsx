@@ -25,6 +25,9 @@ const CAMINHOS = {
   alerta: <><path d="M12 3 2 20h20z" /><path d="M12 10v4M12 17v.5" /></>,
   seta: <path d="m9 5 7 7-7 7" />,
   play: <path d="M7 5v14l12-7z" />,
+  etiqueta: <><path d="M3 12V4h8l10 10-8 8z" /><circle cx="7.5" cy="8.5" r="1.5" /></>,
+  sacola: <><path d="M5 8h14l-1 13H6z" /><path d="M9 8V6a3 3 0 0 1 6 0v2" /></>,
+  menos: <path d="M5 12h14" />,
   foto: <><rect x="3" y="6" width="18" height="14" rx="3" /><circle cx="12" cy="13" r="3.5" /><path d="M8 6l1.5-2h5L16 6" /></>,
 };
 

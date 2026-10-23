@@ -23,7 +23,14 @@ public final class Enums {
 
     public enum TipoLancamento { ENTRADA, SAIDA }
 
-    public enum CategoriaLancamento { ENCOMENDA, CASAMENTO, PRESENTE, OFICINA, MATERIAL, OUTROS }
+    public enum CategoriaLancamento { ENCOMENDA, CASAMENTO, PRESENTE, OFICINA, VENDA, MATERIAL, OUTROS }
+
+    /** De onde veio a saída de material. */
+    public enum OrigemConsumo { FICHA_ENCOMENDA, MANUAL_ENCOMENDA, PRODUCAO_ESTOQUE }
+
+    public enum CanalVenda { ATELIE, FEIRA, INSTAGRAM, WHATSAPP, OUTRO }
+
+    public enum StatusVenda { CONCLUIDA, CANCELADA }
 
     public enum FormaPagamento { PIX, DINHEIRO, CARTAO, OUTRO }
 

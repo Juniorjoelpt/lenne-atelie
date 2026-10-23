@@ -8,6 +8,8 @@ const MENU = [
   ['/admin', 'painel', 'Painel', true],
   ['/admin/orcamentos', 'orcamento', 'Orçamentos'],
   ['/admin/encomendas', 'encomenda', 'Encomendas'],
+  ['/admin/produtos', 'etiqueta', 'Produtos'],
+  ['/admin/vendas', 'sacola', 'Vendas'],
   ['/admin/oficinas', 'oficina', 'Oficinas'],
   ['/admin/clientes', 'cliente', 'Clientes'],
   ['/admin/financeiro', 'financeiro', 'Financeiro'],

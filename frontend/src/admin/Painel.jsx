@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { api, sessao } from '../api.js';
 import Icone from '../componentes/Icone.jsx';
 import { Estado, Selo, useCarregar, Vazio } from '../componentes/ui.jsx';
-import { CORES_GRAFICO, STATUS_ENCOMENDA, dataCurta, dataHora, moeda, moedaCurta, primeiroNome } from '../util.js';
+import { CORES_GRAFICO, STATUS_ENCOMENDA, dataCurta, dataHora, moeda, moedaCurta, primeiroNome, qtdUn } from '../util.js';
 import { Topo } from './Layout.jsx';
 
 export default function Painel() {
@@ -152,7 +152,9 @@ function Conteudo({ p }) {
             <p style={{ fontSize: 20, fontWeight: 900 }}>
               {p.materiaisBaixos.length === 1 ? `${p.materiaisBaixos[0].nome} está acabando` : `${p.materiaisBaixos.length} materiais estão acabando`}
             </p>
-            <p style={{ fontWeight: 700 }}>{p.materiaisBaixos.map((m) => `${m.nome}: restam ${Number(m.quantidade).toLocaleString('pt-BR')} (${m.unidade}), mínimo ${Number(m.estoqueMinimo).toLocaleString('pt-BR')}`).join(' · ')}</p>
+            <p style={{ fontWeight: 700 }}>{p.materiaisBaixos.map((m) => Number(m.quantidade) < 0
+              ? `${m.nome}: estoque negativo, registre a compra`
+              : `${m.nome}: restam ${qtdUn(m.quantidade, m.unidade)} (mínimo ${qtdUn(m.estoqueMinimo, m.unidade)})`).join(' · ')}</p>
           </div>
           <Link to="/admin/materiais" className="btn btn-oliva">Ver materiais</Link>
         </section>

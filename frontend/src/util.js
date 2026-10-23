@@ -91,8 +91,49 @@ export const TIPOS_CLIENTE = { CLIENTE: 'Cliente', NOIVA: 'Noiva', PARCEIRO: 'Pa
 
 export const CATEGORIAS_LANC = {
   ENCOMENDA: 'Encomendas', CASAMENTO: 'Casamentos', PRESENTE: 'Presentes',
-  OFICINA: 'Oficinas', MATERIAL: 'Materiais', OUTROS: 'Outros',
+  OFICINA: 'Oficinas', VENDA: 'Pronta-entrega', MATERIAL: 'Materiais', OUTROS: 'Outros',
 };
+
+export const CANAIS = { ATELIE: 'Ateliê', FEIRA: 'Feira', INSTAGRAM: 'Instagram', WHATSAPP: 'WhatsApp', OUTRO: 'Outro' };
+
+/** Quantidade com até 3 casas: 0,25 · 40 · 1,125 */
+export const qtd = (n) => Number(n || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+
+/** "90 metros", "1 unidade", "2,5 rolos", "300 g" (abreviações ficam como estão). */
+export function qtdUn(n, unidade) {
+  const u = unidade || '';
+  const plural = Math.abs(Number(n)) > 1 && u.length > 2 && /[aeiou]$/i.test(u);
+  return `${qtd(n)} ${plural ? `${u}s` : u}`;
+}
+
+/** Custo unitário de material, com mais casas para valores pequenos (R$ 0,035/g). */
+export const moedaUnit = (v) => {
+  const n = Number(v || 0);
+  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: n > 0 && n < 1 ? 4 : 2 });
+};
+
+const r2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+
+/**
+ * Mesmo cálculo do servidor, para mostrar a composição do preço enquanto ela digita.
+ * prec = { valorHora, custoFixoHora, margemPadrao }
+ */
+export function calcularFicha({ horas, outros, margem, precoVenda, itens }, materiaisPorId, prec) {
+  const materiais = r2(itens.reduce((s, i) => s + (Number(i.quantidade) || 0) * Number(materiaisPorId[i.materialId]?.custoUnitario || 0), 0));
+  const h = Number(horas) || 0;
+  const maoObra = r2(h * Number(prec.valorHora || 0));
+  const fixo = r2(h * Number(prec.custoFixoHora || 0));
+  const o = Number(outros) || 0;
+  const total = r2(materiais + maoObra + fixo + o);
+  const m = margem === '' || margem == null ? Number(prec.margemPadrao || 0) : Number(margem);
+  const sugerido = total > 0 ? Math.ceil(Number((total * (1 + m / 100)).toFixed(6))) : 0;
+  const atual = precoVenda !== '' && precoVenda != null && Number(precoVenda) > 0 ? Number(precoVenda) : sugerido;
+  return {
+    custoMateriais: materiais, custoMaoObra: maoObra, custoFixo: fixo, outrosCustos: o, custoTotal: total,
+    margem: m, precoSugerido: sugerido, precoAtual: atual, lucroUnitario: r2(atual - total),
+    ganhoPorHora: h > 0 ? r2((atual - materiais - fixo - o) / h) : null,
+  };
+}
 
 export const FORMAS = { PIX: 'Pix', DINHEIRO: 'Dinheiro', CARTAO: 'Cartão', OUTRO: 'Outro' };
 

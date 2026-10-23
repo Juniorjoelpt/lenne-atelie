@@ -24,9 +24,12 @@ public class OrcamentoService {
     private final EncomendaRepository encomendas;
     private final EncomendaService encomendaService;
     private final ClienteService clientes;
+    private final br.com.mssolucoes.atelie.repositorio.ProdutoRepository produtos;
 
     public OrcamentoService(OrcamentoRepository repo, EncomendaRepository encomendas,
-                            EncomendaService encomendaService, ClienteService clientes) {
+                            EncomendaService encomendaService, ClienteService clientes,
+                            br.com.mssolucoes.atelie.repositorio.ProdutoRepository produtos) {
+        this.produtos = produtos;
         this.repo = repo;
         this.encomendas = encomendas;
         this.encomendaService = encomendaService;
@@ -122,12 +125,16 @@ public class OrcamentoService {
         e.setOrcamento(o);
         e.setDescricao(r.descricao().trim());
         e.setFrente(r.frente());
+        if (r.produtoId() != null) {
+            e.setProduto(produtos.findById(r.produtoId()).orElseThrow(() -> new NaoEncontradoException("Peça")));
+        }
+        e.setQuantidade(r.quantidade() == null ? 1 : r.quantidade());
         e.setValorTotal(r.valorTotal());
         e.setValorSinal(sinal);
         e.setPrazoEntrega(r.prazoEntrega() != null ? r.prazoEntrega() : o.getDataDesejada());
         e.setStatus(sinal.signum() == 0 ? StatusEncomenda.EM_PRODUCAO : StatusEncomenda.AGUARDANDO_SINAL);
         e.setObservacoes(o.getDetalhes());
-        return encomendaService.paraResp(encomendas.save(e));
+        return encomendaService.salvarEProcessar(e);
     }
 
     @Transactional

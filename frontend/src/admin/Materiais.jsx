@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { api } from '../api.js';
 import Icone from '../componentes/Icone.jsx';
 import { Campo, Confirmar, Estado, ModalForm, lerForm, useCarregar, useToast, Vazio } from '../componentes/ui.jsx';
-import { moeda } from '../util.js';
+import { moeda, moedaUnit, qtdUn } from '../util.js';
 import { Topo } from './Layout.jsx';
 
 const qtd = (n) => Number(n).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
@@ -31,10 +31,10 @@ export default function Materiais() {
                   <tbody>
                     {dados?.map((m) => (
                       <tr key={m.id}>
-                        <td><strong>{m.nome}</strong>{m.abaixoDoMinimo && <span className="selo selo-perigo" style={{ marginLeft: 8 }}>acabando</span>}</td>
-                        <td className="num" style={{ fontWeight: 800 }}>{qtd(m.quantidade)} {m.unidade}</td>
+                        <td><strong>{m.nome}</strong>{m.abaixoDoMinimo && <span className="selo selo-perigo" style={{ marginLeft: 8 }}>{Number(m.quantidade) < 0 ? 'registre a compra' : 'acabando'}</span>}</td>
+                        <td className={`num ${Number(m.quantidade) < 0 ? 'estoque-negativo' : ''}`} style={{ fontWeight: 800 }}>{qtdUn(m.quantidade, m.unidade)}</td>
                         <td className="num">{qtd(m.estoqueMinimo)}</td>
-                        <td className="num">{moeda(m.custoUnitario)}/{m.unidade}</td>
+                        <td className="num">{moedaUnit(m.custoUnitario)}/{m.unidade}</td>
                         <td style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>
                           <button type="button" className="btn btn-claro btn-p" onClick={() => setAjuste({ m, tipo: 'SAIDA' })}>Usei</button>{' '}
                           <button type="button" className="btn btn-oliva btn-p" onClick={() => setAjuste({ m, tipo: 'ENTRADA' })}>Comprei</button>{' '}
@@ -61,10 +61,11 @@ export default function Materiais() {
           recarregar();
         }}>
           <Campo rotulo="Nome" nome="nome" defaultValue={form.nome} required maxLength={140} inteiro placeholder="Cordão cru 5 mm" />
-          <Campo rotulo="Unidade" nome="unidade" defaultValue={form.unidade || 'rolo'} required maxLength={20} dica="rolo, metro, kg, unidade…" />
-          <Campo rotulo="Quantidade em estoque" nome="quantidade" tipo="number" min="0" step="0.01" defaultValue={form.quantidade ?? 0} required />
-          <Campo rotulo="Avisar quando chegar a" nome="estoqueMinimo" tipo="number" min="0" step="0.01" defaultValue={form.estoqueMinimo ?? 0} required />
-          <Campo rotulo="Custo por unidade (R$)" nome="custoUnitario" tipo="number" min="0" step="0.01" defaultValue={form.custoUnitario ?? 0} required />
+          <Campo rotulo="Unidade" nome="unidade" defaultValue={form.unidade || 'metro'} required maxLength={20} dica="Use a mesma unidade das fichas: metro, grama, unidade…" />
+          <Campo rotulo="Quantidade em estoque" nome="quantidade" tipo="number" step="0.001" defaultValue={form.quantidade ?? 0} required />
+          <Campo rotulo="Avisar quando chegar a" nome="estoqueMinimo" tipo="number" min="0" step="0.001" defaultValue={form.estoqueMinimo ?? 0} required />
+          <Campo rotulo="Custo por unidade (R$)" nome="custoUnitario" tipo="number" min="0" step="0.0001" defaultValue={form.custoUnitario ?? 0} required
+            dica="Ex.: rolo de 100 m por R$ 50 = R$ 0,50 por metro. Atualiza sozinho a cada compra." />
         </ModalForm>
       )}
 
@@ -81,7 +82,7 @@ export default function Materiais() {
           }}>
           <Campo rotulo={`Quantidade (${ajuste.m.unidade})`} nome="quantidade" tipo="number" min="0.01" step="0.01" required inteiro={ajuste.tipo === 'SAIDA'} />
           {ajuste.tipo === 'ENTRADA' && <>
-            <Campo rotulo="Valor pago (R$)" nome="valorCompra" tipo="number" min="0" step="0.01" dica="Se ficar em branco, usa o custo cadastrado." />
+            <Campo rotulo="Valor pago (R$)" nome="valorCompra" tipo="number" min="0" step="0.01" dica="Atualiza o custo do material e o preço das fichas. Em branco, usa o custo cadastrado." />
             <label className="checkbox inteiro"><input type="checkbox" name="registrarDespesa" defaultChecked /> Lançar a compra como despesa no financeiro</label>
           </>}
         </ModalForm>

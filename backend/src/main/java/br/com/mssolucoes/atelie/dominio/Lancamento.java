@@ -51,6 +51,10 @@ public class Lancamento {
     @JoinColumn(name = "inscricao_id")
     private Inscricao inscricao;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "venda_id")
+    private Venda venda;
+
     @Column(name = "criado_em", nullable = false)
     private LocalDateTime criadoEm = LocalDateTime.now();
 }

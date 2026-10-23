@@ -101,7 +101,7 @@ export default function Financeiro() {
                               <button type="button" className="btn btn-fantasma btn-icone btn-p" aria-label="Excluir" onClick={() => setExcluir(l)}><Icone nome="lixo" tamanho={18} /></button>
                             </>}
                             {l.encomendaId && <span className="mudo" style={{ fontSize: 13 }}>encomenda</span>}
-                            {l.automatico && <span className="mudo" style={{ fontSize: 13 }}>oficina</span>}
+                            {l.automatico && <span className="mudo" style={{ fontSize: 13 }}>{l.vendaId ? 'venda' : 'oficina'}</span>}
                           </td>
                         </tr>
                       ))}
@@ -131,7 +131,7 @@ export default function Financeiro() {
           <Campo rotulo="Data" nome="data" tipo="date" defaultValue={form.data || hojeIso()} required />
           <Campo rotulo="Categoria" nome="categoria" opcoes={CATEGORIAS_LANC} defaultValue={form.categoria || (form.tipo === 'ENTRADA' ? 'PRESENTE' : 'MATERIAL')} />
           <Campo rotulo="Forma" nome="formaPagamento" opcoes={FORMAS} defaultValue={form.formaPagamento || 'PIX'} />
-          {form.tipo === 'ENTRADA' && <p className="inteiro mudo" style={{ fontSize: 14 }}>Pagamentos de encomendas são registrados na própria encomenda, e as inscrições de oficina entram sozinhas ao confirmar o Pix.</p>}
+          {form.tipo === 'ENTRADA' && <p className="inteiro mudo" style={{ fontSize: 14 }}>Pagamentos de encomendas são registrados na própria encomenda, vendas de peças prontas em Vendas, e as inscrições de oficina entram sozinhas ao confirmar o Pix.</p>}
         </ModalForm>
       )}
       {excluir && <Confirmar titulo="Excluir lançamento" perigo textoBotao="Excluir" texto={`Excluir "${excluir.descricao}" (${moeda(excluir.valor)})?`}

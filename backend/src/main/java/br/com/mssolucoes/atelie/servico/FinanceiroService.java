@@ -68,9 +68,7 @@ public class FinanceiroService {
     @Transactional
     public LancamentoResp atualizar(Long id, LancamentoReq r) {
         Lancamento l = buscar(id);
-        if (l.getInscricao() != null) {
-            throw new RegraNegocioException("Este lançamento vem de uma inscrição. Altere pela oficina.");
-        }
+        bloquearAutomatico(l);
         preencher(l, r);
         return paraResp(repo.save(l));
     }
@@ -78,10 +76,17 @@ public class FinanceiroService {
     @Transactional
     public void excluir(Long id) {
         Lancamento l = buscar(id);
-        if (l.getInscricao() != null) {
-            throw new RegraNegocioException("Este lançamento vem de uma inscrição. Cancele a confirmação pela oficina.");
-        }
+        bloquearAutomatico(l);
         repo.delete(l);
+    }
+
+    private static void bloquearAutomatico(Lancamento l) {
+        if (l.getInscricao() != null) {
+            throw new RegraNegocioException("Este lançamento vem de uma inscrição. Altere pela oficina.");
+        }
+        if (l.getVenda() != null) {
+            throw new RegraNegocioException("Este lançamento vem de uma venda. Cancele a venda em Vendas.");
+        }
     }
 
     private Lancamento buscar(Long id) {
@@ -120,6 +125,7 @@ public class FinanceiroService {
             case CASAMENTO -> "Casamentos";
             case PRESENTE -> "Presentes";
             case OFICINA -> "Oficinas";
+            case VENDA -> "Pronta-entrega";
             case MATERIAL -> "Materiais";
             case OUTROS -> "Outros";
         };
@@ -130,7 +136,8 @@ public class FinanceiroService {
                 l.getData(), l.getFormaPagamento(),
                 l.getEncomenda() == null ? null : l.getEncomenda().getId(),
                 l.getInscricao() == null ? null : l.getInscricao().getId(),
-                l.getInscricao() != null);
+                l.getVenda() == null ? null : l.getVenda().getId(),
+                l.getInscricao() != null || l.getVenda() != null);
     }
 
     static LocalDate hoje() {

@@ -24,19 +24,21 @@ public class Material {
     @Column(nullable = false, length = 20)
     private String unidade;
 
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Column(nullable = false, precision = 12, scale = 3)
     private BigDecimal quantidade = BigDecimal.ZERO;
 
-    @Column(name = "estoque_minimo", nullable = false, precision = 12, scale = 2)
+    @Column(name = "estoque_minimo", nullable = false, precision = 12, scale = 3)
     private BigDecimal estoqueMinimo = BigDecimal.ZERO;
 
-    @Column(name = "custo_unitario", nullable = false, precision = 12, scale = 2)
+    /** Custo por unidade (rolo, metro, grama…); atualizado a cada compra com valor. */
+    @Column(name = "custo_unitario", nullable = false, precision = 12, scale = 4)
     private BigDecimal custoUnitario = BigDecimal.ZERO;
 
     @Column(name = "criado_em", nullable = false)
     private LocalDateTime criadoEm = LocalDateTime.now();
 
     public boolean isAbaixoDoMinimo() {
-        return quantidade.compareTo(estoqueMinimo) <= 0 && estoqueMinimo.signum() > 0;
+        return quantidade.signum() < 0
+                || (quantidade.compareTo(estoqueMinimo) <= 0 && estoqueMinimo.signum() > 0);
     }
 }

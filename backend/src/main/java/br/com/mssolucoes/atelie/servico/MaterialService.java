@@ -24,10 +24,16 @@ public class MaterialService {
 
     private final MaterialRepository repo;
     private final LancamentoRepository lancamentos;
+    private final br.com.mssolucoes.atelie.repositorio.ProdutoRepository produtos;
+    private final br.com.mssolucoes.atelie.repositorio.ConsumoMaterialRepository consumos;
 
-    public MaterialService(MaterialRepository repo, LancamentoRepository lancamentos) {
+    public MaterialService(MaterialRepository repo, LancamentoRepository lancamentos,
+                           br.com.mssolucoes.atelie.repositorio.ProdutoRepository produtos,
+                           br.com.mssolucoes.atelie.repositorio.ConsumoMaterialRepository consumos) {
         this.repo = repo;
         this.lancamentos = lancamentos;
+        this.produtos = produtos;
+        this.consumos = consumos;
     }
 
     @Transactional(readOnly = true)
@@ -66,8 +72,13 @@ public class MaterialService {
             m.setQuantidade(m.getQuantidade().subtract(r.quantidade()));
         } else {
             m.setQuantidade(m.getQuantidade().add(r.quantidade()));
-            BigDecimal valor = r.valorCompra() != null && r.valorCompra().signum() > 0
-                    ? r.valorCompra() : m.getCustoUnitario().multiply(r.quantidade());
+            boolean informouValor = r.valorCompra() != null && r.valorCompra().signum() > 0;
+            BigDecimal valor = informouValor
+                    ? r.valorCompra() : m.getCustoUnitario().multiply(r.quantidade()).setScale(2, java.math.RoundingMode.HALF_UP);
+            if (informouValor) {
+                // O custo passa a ser o da última compra: as fichas técnicas se atualizam sozinhas
+                m.setCustoUnitario(r.valorCompra().divide(r.quantidade(), 4, java.math.RoundingMode.HALF_UP));
+            }
             if (r.registrarDespesa() && valor.signum() > 0) {
                 Lancamento l = new Lancamento();
                 l.setTipo(TipoLancamento.SAIDA);
@@ -85,7 +96,14 @@ public class MaterialService {
 
     @Transactional
     public void excluir(Long id) {
-        repo.delete(buscar(id));
+        Material m = buscar(id);
+        if (produtos.existsByMateriaisMaterialId(id)) {
+            throw new RegraNegocioException("Este material está em fichas técnicas. Tire-o das fichas antes de excluir.");
+        }
+        if (consumos.existsByMaterialId(id)) {
+            throw new RegraNegocioException("Este material já foi usado em encomendas ou produção e faz parte do histórico.");
+        }
+        repo.delete(m);
     }
 
     private Material buscar(Long id) {

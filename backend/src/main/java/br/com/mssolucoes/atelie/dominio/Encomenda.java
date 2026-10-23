@@ -28,6 +28,21 @@ public class Encomenda {
     @JoinColumn(name = "orcamento_id")
     private Orcamento orcamento;
 
+    /** Ficha técnica usada (opcional). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "produto_id")
+    private Produto produto;
+
+    @Column(nullable = false)
+    private int quantidade = 1;
+
+    /** Horas reais; se vazio, usa as horas da ficha × quantidade. */
+    @Column(name = "horas_trabalhadas", precision = 8, scale = 2)
+    private BigDecimal horasTrabalhadas;
+
+    @Column(name = "materiais_baixados", nullable = false)
+    private boolean materiaisBaixados;
+
     @Column(nullable = false, length = 200)
     private String descricao;
 
