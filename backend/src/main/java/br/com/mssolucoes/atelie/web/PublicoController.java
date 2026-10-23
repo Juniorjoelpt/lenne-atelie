@@ -23,9 +23,15 @@ public class PublicoController {
     private final PortfolioService portfolio;
     private final OrcamentoService orcamentos;
     private final LimitadorDeRequisicoes limitador;
+    private final br.com.mssolucoes.atelie.servico.DepoimentoService depoimentos;
+    private final br.com.mssolucoes.atelie.servico.CertificadoService certificados;
 
     public PublicoController(ConfiguracaoService configuracao, OficinaService oficinas, PortfolioService portfolio,
-                             OrcamentoService orcamentos, LimitadorDeRequisicoes limitador) {
+                             OrcamentoService orcamentos, LimitadorDeRequisicoes limitador,
+                             br.com.mssolucoes.atelie.servico.DepoimentoService depoimentos,
+                             br.com.mssolucoes.atelie.servico.CertificadoService certificados) {
+        this.depoimentos = depoimentos;
+        this.certificados = certificados;
         this.configuracao = configuracao;
         this.oficinas = oficinas;
         this.portfolio = portfolio;
@@ -35,7 +41,8 @@ public class PublicoController {
 
     @GetMapping("/site")
     public SitePublico site() {
-        return new SitePublico(configuracao.dto(), oficinas.abertasNoSite(), portfolio.publicados());
+        return new SitePublico(configuracao.dto(), oficinas.abertasNoSite(), portfolio.publicados(),
+                depoimentos.publicados());
     }
 
     @PostMapping("/orcamentos")
@@ -52,6 +59,19 @@ public class PublicoController {
                                           HttpServletRequest req) {
         limitador.verificar(req, "inscricao", 5, 60 * 60);
         return oficinas.inscreverPeloSite(id, r);
+    }
+
+    /** Página do certificado: confere que ele existe e mostra os dados (serve como verificação). */
+    @GetMapping("/certificados/{codigo}")
+    public CertificadoPublico certificado(@PathVariable String codigo, HttpServletRequest req) {
+        limitador.verificar(req, "certificado", 60, 60 * 60);
+        return certificados.verificar(codigo);
+    }
+
+    @GetMapping("/certificados/{codigo}/pdf")
+    public org.springframework.http.ResponseEntity<byte[]> certificadoPdf(@PathVariable String codigo, HttpServletRequest req) {
+        limitador.verificar(req, "certificado-pdf", 30, 60 * 60);
+        return EquipeSiteController.pdf(certificados.publico(codigo));
     }
 
     @PostMapping("/inscricoes/{codigo}/comprovante-enviado")

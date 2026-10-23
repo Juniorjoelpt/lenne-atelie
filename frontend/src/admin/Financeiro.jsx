@@ -3,7 +3,8 @@ import { api } from '../api.js';
 import Icone from '../componentes/Icone.jsx';
 import { Campo, Confirmar, Estado, ModalForm, lerForm, useCarregar, useToast, Vazio } from '../componentes/ui.jsx';
 import { CATEGORIAS_LANC, CORES_GRAFICO, FORMAS, data, hojeIso, moeda } from '../util.js';
-import { Topo } from './Layout.jsx';
+import { Abas, Topo } from './Layout.jsx';
+import { ABAS_FINANCEIRO } from './ContasFixas.jsx';
 
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
@@ -32,6 +33,7 @@ export default function Financeiro() {
         <button type="button" className="btn btn-claro" onClick={() => setForm({ tipo: 'SAIDA' })}>Nova despesa</button>
         <button type="button" className="btn btn-terra" onClick={() => setForm({ tipo: 'ENTRADA' })}><Icone nome="mais" tamanho={18} largura={3} />Nova entrada</button>
       </Topo>
+      <Abas itens={ABAS_FINANCEIRO} />
 
       <Estado carregando={carregando} erro={erro}>
         {r && (
@@ -101,7 +103,7 @@ export default function Financeiro() {
                               <button type="button" className="btn btn-fantasma btn-icone btn-p" aria-label="Excluir" onClick={() => setExcluir(l)}><Icone nome="lixo" tamanho={18} /></button>
                             </>}
                             {l.encomendaId && <span className="mudo" style={{ fontSize: 13 }}>encomenda</span>}
-                            {l.automatico && <span className="mudo" style={{ fontSize: 13 }}>{l.vendaId ? 'venda' : 'oficina'}</span>}
+                            {l.automatico && <span className="mudo" style={{ fontSize: 13 }}>{l.vendaId ? 'venda' : l.compraId ? 'compra' : l.contaFixaId ? 'conta fixa' : 'oficina'}</span>}
                           </td>
                         </tr>
                       ))}
@@ -126,11 +128,12 @@ export default function Financeiro() {
             recarregar();
           }}>
           <Campo rotulo="Descrição" nome="descricao" defaultValue={form.descricao} required maxLength={200} inteiro
-            placeholder={form.tipo === 'ENTRADA' ? 'Venda na feira, peça avulsa…' : 'Embalagens, frete, aluguel…'} />
+            placeholder={form.tipo === 'ENTRADA' ? 'Venda na feira, peça avulsa…' : 'Embalagens, frete, taxa…'} />
           <Campo rotulo="Valor (R$)" nome="valor" tipo="number" min="0.01" step="0.01" defaultValue={form.valor} required />
           <Campo rotulo="Data" nome="data" tipo="date" defaultValue={form.data || hojeIso()} required />
           <Campo rotulo="Categoria" nome="categoria" opcoes={CATEGORIAS_LANC} defaultValue={form.categoria || (form.tipo === 'ENTRADA' ? 'PRESENTE' : 'MATERIAL')} />
           <Campo rotulo="Forma" nome="formaPagamento" opcoes={FORMAS} defaultValue={form.formaPagamento || 'PIX'} />
+          {form.tipo === 'SAIDA' && <p className="inteiro mudo" style={{ fontSize: 14 }}>Contas do mês (aluguel, energia, MEI) ficam em Contas fixas, e compras de material em Materiais › Compras: assim entram no custo das peças.</p>}
           {form.tipo === 'ENTRADA' && <p className="inteiro mudo" style={{ fontSize: 14 }}>Pagamentos de encomendas são registrados na própria encomenda, vendas de peças prontas em Vendas, e as inscrições de oficina entram sozinhas ao confirmar o Pix.</p>}
         </ModalForm>
       )}

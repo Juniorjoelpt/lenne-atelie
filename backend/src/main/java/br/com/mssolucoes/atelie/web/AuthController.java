@@ -42,7 +42,7 @@ public class AuthController {
                 .filter(Usuario::isAtivo)
                 .filter(x -> encoder.matches(r.senha(), x.getSenhaHash()))
                 .orElseThrow(() -> new BadCredentialsException("credenciais"));
-        return new LoginResp(jwt.gerar(u.getId(), u.getEmail()), u.getNome(), u.getEmail());
+        return new LoginResp(jwt.gerar(u.getId(), u.getEmail()), u.getNome(), u.getEmail(), u.getPerfil());
     }
 
     @GetMapping("/eu")

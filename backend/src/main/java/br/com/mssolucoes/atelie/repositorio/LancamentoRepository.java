@@ -26,6 +26,16 @@ public interface LancamentoRepository extends JpaRepository<Lancamento, Long> {
 
     void deleteByVendaId(Long vendaId);
 
+    void deleteByCompraId(Long compraId);
+
+    boolean existsByCompraId(Long compraId);
+
+    boolean existsByContaFixaId(Long contaFixaId);
+
+    List<Lancamento> findByContaFixaIsNotNullAndCompetenciaIn(java.util.Collection<LocalDate> competencias);
+
+    java.util.Optional<Lancamento> findByContaFixaIdAndCompetencia(Long contaFixaId, LocalDate competencia);
+
     @Query("select coalesce(sum(l.valor), 0) from Lancamento l where l.encomenda.id = :encomendaId and l.tipo = :tipo")
     BigDecimal somaPorEncomenda(@Param("encomendaId") Long encomendaId, @Param("tipo") TipoLancamento tipo);
 

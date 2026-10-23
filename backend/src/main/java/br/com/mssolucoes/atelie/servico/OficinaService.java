@@ -239,6 +239,24 @@ public class OficinaService {
         o.setValor(r.valor());
         o.setStatus(r.status() == null ? StatusOficina.ABERTA : r.status());
         o.setPublicada(r.publicada() == null || r.publicada());
+        o.setCargaHoraria(r.cargaHoraria());
+        o.setConteudoProgramatico(Texto.limpar(r.conteudoProgramatico()));
+    }
+
+    /** Carga do certificado: a informada ou a duração da oficina, arredondada para a meia hora. */
+    public static java.math.BigDecimal cargaHorariaCertificado(Oficina o) {
+        if (o.getCargaHoraria() != null) {
+            return o.getCargaHoraria();
+        }
+        if (o.getFim() == null || !o.getFim().isAfter(o.getInicio())) {
+            return null;
+        }
+        long minutos = java.time.Duration.between(o.getInicio(), o.getFim()).toMinutes();
+        // Oficina de vários dias (início e fim em datas diferentes) não tem como saber as horas: fica em branco
+        if (minutos > 12 * 60) {
+            return null;
+        }
+        return java.math.BigDecimal.valueOf(Math.round(minutos / 30.0) / 2.0).setScale(1, java.math.RoundingMode.HALF_UP);
     }
 
     private InscricaoPublicaResp respostaPublica(Inscricao i) {
@@ -257,13 +275,13 @@ public class OficinaService {
         long restantes = Math.max(0, o.getVagas() - confirmadas - aConferir - aguardando);
         return new OficinaResp(id, o.getTitulo(), o.getDescricao(), o.getInicio(), o.getFim(), o.getLocal(),
                 o.getVagas(), o.getValor(), o.getStatus(), o.isPublicada(), confirmadas, aConferir, aguardando,
-                espera, restantes);
+                espera, restantes, o.getCargaHoraria(), o.getConteudoProgramatico(), cargaHorariaCertificado(o));
     }
 
     public static InscricaoResp paraResp(Inscricao i) {
         Oficina o = i.getOficina();
         return new InscricaoResp(i.getId(), o.getId(), o.getTitulo(), o.getInicio(),
                 i.getCliente() == null ? null : i.getCliente().getId(), i.getNome(), i.getWhatsapp(),
-                i.getStatus(), i.getOrigem(), i.getCriadoEm());
+                i.getStatus(), i.getOrigem(), i.getCriadoEm(), i.getCodigo());
     }
 }

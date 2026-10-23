@@ -28,6 +28,10 @@ public class Usuario {
     @Column(nullable = false)
     private boolean ativo = true;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Enums.Perfil perfil = Enums.Perfil.ADMIN;
+
     @Column(name = "criado_em", nullable = false)
     private LocalDateTime criadoEm = LocalDateTime.now();
 }

@@ -15,7 +15,7 @@ export default function Entrar() {
     setEnviando(true);
     try {
       const r = await api.post('/api/auth/login', { email: d.email, senha: d.senha });
-      sessao.entrar(r.token, r.nome);
+      sessao.entrar(r.token, r.nome, r.perfil);
       ir('/admin', { replace: true });
     } catch (err) {
       setErro(err.message);

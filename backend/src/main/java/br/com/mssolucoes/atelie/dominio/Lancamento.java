@@ -55,6 +55,17 @@ public class Lancamento {
     @JoinColumn(name = "venda_id")
     private Venda venda;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "compra_id")
+    private Compra compra;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "conta_fixa_id")
+    private ContaFixa contaFixa;
+
+    /** Mês a que o pagamento da conta fixa se refere (sempre dia 1). */
+    private LocalDate competencia;
+
     @Column(name = "criado_em", nullable = false)
     private LocalDateTime criadoEm = LocalDateTime.now();
 }

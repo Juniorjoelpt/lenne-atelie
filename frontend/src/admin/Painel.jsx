@@ -6,6 +6,11 @@ import { CORES_GRAFICO, STATUS_ENCOMENDA, dataCurta, dataHora, moeda, moedaCurta
 import { Topo } from './Layout.jsx';
 
 export default function Painel() {
+  if (sessao.ajudante()) return <PainelAjudante />;
+  return <PainelAdmin />;
+}
+
+function PainelAdmin() {
   const { dados: p, erro, carregando } = useCarregar(() => api.get('/api/painel'));
 
   return (
@@ -47,6 +52,7 @@ function Conteudo({ p }) {
           <Icone nome="seta" />
         </Link>
       )}
+      {p.contasAPagar.length > 0 && <ContasAPagar contas={p.contasAPagar} />}
       <section className="boas-vindas" aria-label="Boas-vindas">
         <div style={{ flex: '1 1 300px', minWidth: 0 }}>
           <p style={{ fontSize: 30, fontWeight: 900, color: 'var(--terra-escuro)' }}>{p.saudacao}, {primeiroNome(sessao.nome()) || 'Lenne'}!</p>
@@ -167,6 +173,95 @@ function Conteudo({ p }) {
               : `${m.nome}: restam ${qtdUn(m.quantidade, m.unidade)} (mínimo ${qtdUn(m.estoqueMinimo, m.unidade)})`).join(' · ')}</p>
           </div>
           <Link to="/admin/materiais" className="btn btn-oliva">Ver materiais</Link>
+        </section>
+      )}
+    </>
+  );
+}
+
+function ContasAPagar({ contas }) {
+  const vencidas = contas.filter((c) => c.vencida).length;
+  const total = contas.reduce((s, c) => s + Number(c.valor), 0);
+  return (
+    <Link to="/admin/financeiro/contas" className="clay" style={{ background: vencidas ? 'var(--perigo-claro)' : 'var(--areia)', borderRadius: 28, padding: '16px 22px', display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none', color: 'var(--marrom)' }}>
+      <div className="icone-caixa" style={{ background: vencidas ? 'var(--perigo)' : 'var(--cafe)' }}><Icone nome="recibo" cor="#FFFDF8" tamanho={26} /></div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontWeight: 900, fontSize: 18 }}>
+          {vencidas
+            ? `${vencidas} ${vencidas === 1 ? 'conta vencida' : 'contas vencidas'}${contas.length > vencidas ? ` e ${contas.length - vencidas} vencendo` : ''}`
+            : `${contas.length} ${contas.length === 1 ? 'conta vence' : 'contas vencem'} nos próximos dias`} · {moeda(total)} a pagar
+        </p>
+        <p style={{ fontWeight: 700, color: vencidas ? 'var(--perigo)' : 'var(--marrom-2)' }}>
+          {contas.slice(0, 4).map((c) => `${c.nome} (${c.vencida ? 'venceu' : 'vence'} ${dataCurta(c.vencimento)})`).join(' · ')}{contas.length > 4 ? '…' : ''}
+        </p>
+      </div>
+      <Icone nome="seta" />
+    </Link>
+  );
+}
+
+/** Painel da ajudante: o que está em produção, o que vence, a agenda da semana e o material acabando. Sem valores. */
+function PainelAjudante() {
+  const enc = useCarregar(() => api.get('/api/encomendas'));
+  const mats = useCarregar(() => api.get('/api/materiais'));
+  const hoje = new Date();
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const ate = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + 7);
+  const agenda = useCarregar(() => api.get(`/api/agenda?de=${iso(hoje)}&ate=${iso(ate)}`));
+  const ativas = (enc.dados || []).filter((e) => ['EM_PRODUCAO', 'PRONTA'].includes(e.status))
+    .sort((a, b) => (a.prazoEntrega || '9999').localeCompare(b.prazoEntrega || '9999'));
+  const baixos = (mats.dados || []).filter((m) => m.abaixoDoMinimo);
+  const h = hoje.getHours();
+
+  return (
+    <>
+      <Topo titulo="Painel" />
+      <section className="boas-vindas" aria-label="Boas-vindas">
+        <div style={{ flex: '1 1 300px', minWidth: 0 }}>
+          <p style={{ fontSize: 30, fontWeight: 900, color: 'var(--terra-escuro)' }}>{h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'}, {primeiroNome(sessao.nome())}!</p>
+          <p style={{ marginTop: 6, fontSize: 18, color: '#5A3A28' }}>
+            {ativas.filter((e) => e.status === 'EM_PRODUCAO').length} {ativas.filter((e) => e.status === 'EM_PRODUCAO').length === 1 ? 'encomenda' : 'encomendas'} em produção.
+          </p>
+        </div>
+      </section>
+      <div className="grade-2">
+        <section className="cartao" aria-labelledby="t-prod">
+          <div className="cartao-titulo"><h2 id="t-prod">Para produzir</h2><Link to="/admin/encomendas" className="btn btn-claro btn-p">Abrir</Link></div>
+          <Estado carregando={enc.carregando} erro={enc.erro}>
+            {ativas.length === 0 ? <Vazio>Nenhuma encomenda em produção agora.</Vazio> : (
+              <ul className="lista-linhas">
+                {ativas.slice(0, 8).map((e) => (
+                  <li key={e.id}>
+                    <div className="info"><p>{e.descricao}</p><p>{e.clienteNome}{e.prazoEntrega ? ` · entrega ${dataCurta(e.prazoEntrega)}` : ''}</p></div>
+                    <Selo mapa={STATUS_ENCOMENDA} valor={e.status} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Estado>
+        </section>
+        <section className="cartao" aria-labelledby="t-sem7">
+          <div className="cartao-titulo"><h2 id="t-sem7">Próximos 7 dias</h2><Link to="/admin/agenda" className="btn btn-claro btn-p">Agenda</Link></div>
+          <Estado carregando={agenda.carregando} erro={agenda.erro}>
+            {agenda.dados?.length === 0 ? <Vazio>Nada marcado na semana.</Vazio> : (
+              <ul className="lista-linhas">
+                {agenda.dados?.filter((ev) => ev.tipo !== 'ANIVERSARIO').slice(0, 8).map((ev) => (
+                  <li key={`${ev.tipo}-${ev.id}-${ev.data}`}>
+                    <div className="info"><p>{ev.titulo}</p><p>{dataCurta(ev.data)}{ev.hora ? ` · ${ev.hora.slice(0, 5)}` : ''}{ev.detalhe ? ` · ${ev.detalhe}` : ''}</p></div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Estado>
+        </section>
+      </div>
+      {baixos.length > 0 && (
+        <section className="clay" aria-label="Aviso de estoque" style={{ background: 'var(--oliva-medio)', borderRadius: 32, padding: '22px 30px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 20 }}>
+          <div className="icone-caixa" style={{ background: 'var(--ocre-claro)' }}><Icone nome="alerta" cor="var(--ocre-texto)" tamanho={28} /></div>
+          <div style={{ flex: '1 1 260px', minWidth: 0, color: '#2E3518' }}>
+            <p style={{ fontSize: 20, fontWeight: 900 }}>Avise a Lenne: material acabando</p>
+            <p style={{ fontWeight: 700 }}>{baixos.map((m) => `${m.nome}: ${qtdUn(m.quantidade, m.unidade)}`).join(' · ')}</p>
+          </div>
         </section>
       )}
     </>

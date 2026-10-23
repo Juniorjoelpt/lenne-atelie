@@ -33,12 +33,23 @@ public class ConfiguracaoSeguranca {
                         .contentTypeOptions(c -> {})
                         .referrerPolicy(r -> r.policy(
                                 org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)))
-                .authorizeHttpRequests(a -> a
-                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                        .requestMatchers("/api/publico/**").permitAll()
-                        .requestMatchers("/api/**").authenticated()
-                        .anyRequest().permitAll())
-                .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                .authorizeHttpRequests(a -> {
+                    a.requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                            .requestMatchers("/api/publico/**").permitAll()
+                            .requestMatchers("/api/auth/**").authenticated();
+                    for (AcessoAjudante.Rota r : AcessoAjudante.ROTAS) {
+                        a.requestMatchers(r.metodo(), r.caminho()).hasAnyRole("ADMIN", "AJUDANTE");
+                    }
+                    a.requestMatchers("/api/**").hasRole("ADMIN")
+                            .anyRequest().permitAll();
+                })
+                .exceptionHandling(e -> e
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                        .accessDeniedHandler((req, resp, ex) -> {
+                            resp.setStatus(HttpStatus.FORBIDDEN.value());
+                            resp.setContentType("application/json;charset=UTF-8");
+                            resp.getWriter().write("{\"erro\":\"Seu acesso não permite esta ação. Fale com a administradora do ateliê.\"}");
+                        }))
                 .addFilterBefore(filtroJwt, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

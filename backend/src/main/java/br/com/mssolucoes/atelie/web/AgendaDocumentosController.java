@@ -46,8 +46,10 @@ public class AgendaDocumentosController {
 
     @GetMapping("/agenda")
     public List<EventoAgenda> agenda(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate de,
-                                     @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ate) {
-        return agenda.eventos(de, ate);
+                                     @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ate,
+                                     @org.springframework.security.core.annotation.AuthenticationPrincipal
+                                     br.com.mssolucoes.atelie.seguranca.UsuarioLogado eu) {
+        return agenda.eventos(de, ate, eu == null || !eu.ajudante());
     }
 
     @GetMapping("/compromissos/{id}")

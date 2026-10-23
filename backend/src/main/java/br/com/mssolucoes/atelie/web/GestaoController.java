@@ -7,6 +7,8 @@ import br.com.mssolucoes.atelie.servico.*;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import br.com.mssolucoes.atelie.seguranca.UsuarioLogado;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -146,7 +148,11 @@ public class GestaoController {
     }
 
     @PatchMapping("/encomendas/{id}/status")
-    public EncomendaResp statusEncomenda(@PathVariable Long id, @Valid @RequestBody StatusEncomendaReq r) {
+    public EncomendaResp statusEncomenda(@PathVariable Long id, @Valid @RequestBody StatusEncomendaReq r,
+                                         @AuthenticationPrincipal UsuarioLogado eu) {
+        if (eu.ajudante() && r.status() != StatusEncomenda.PRONTA && r.status() != StatusEncomenda.ENTREGUE) {
+            throw new AcessoNegadoException("A ajudante pode marcar a encomenda como pronta ou entregue.");
+        }
         return encomendas.mudarStatus(id, r.status());
     }
 
@@ -256,7 +262,11 @@ public class GestaoController {
     }
 
     @PostMapping("/materiais/{id}/ajuste")
-    public MaterialResp ajustarMaterial(@PathVariable Long id, @Valid @RequestBody AjusteEstoqueReq r) {
+    public MaterialResp ajustarMaterial(@PathVariable Long id, @Valid @RequestBody AjusteEstoqueReq r,
+                                        @AuthenticationPrincipal UsuarioLogado eu) {
+        if (eu.ajudante() && r.tipo() != br.com.mssolucoes.atelie.dominio.Enums.TipoLancamento.SAIDA) {
+            throw new AcessoNegadoException("Compras de material são registradas pela administradora.");
+        }
         return materiais.ajustar(id, r);
     }
 

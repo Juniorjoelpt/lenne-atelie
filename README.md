@@ -65,6 +65,33 @@ O estoque de material pode ficar negativo; nesse caso aparece como "registre a c
   - Ficam numa pasta **privada**, fora do site, e só abrem com login.
   - A foto da peça pronta vai para o portfólio com um toque: o sistema faz uma cópia pública. A referência nunca vai, porque costuma ser imagem de outra pessoa.
 
+### Compras, contas fixas, certificados, equipe e depoimentos
+
+- **Materiais › Compras e fornecedores:** cadastro de fornecedores e compra com vários materiais de uma vez.
+  - Cada compra soma no estoque, atualiza o custo de cada material (as fichas acompanham) e vira despesa no financeiro.
+  - O frete é dividido entre os itens pelo valor de cada um, para o custo por unidade ser o real.
+  - Na hora de lançar, o sistema mostra se o material saiu mais caro ou mais barato que o custo atual.
+  - O botão de histórico em cada material mostra todos os preços pagos e o último preço em cada fornecedor, com o mais barato destacado.
+  - Cancelar uma compra tira os materiais do estoque, apaga a despesa e volta o custo ao da compra anterior.
+- **Financeiro › Contas fixas:** aluguel, energia, internet, MEI…
+  - Cada conta tem valor previsto e dia de vencimento (dia 31 vence no último dia dos meses curtos).
+  - "Paguei" lança a despesa em "Contas fixas", ligada ao mês; o mesmo mês não é pago duas vezes.
+  - O painel avisa as contas vencidas e as que vencem em até 5 dias, e a agenda mostra os vencimentos.
+  - Em Configurações › Precificação, "Usar as contas fixas" faz o custo fixo por hora acompanhar sozinho a soma das contas marcadas.
+- **Certificado das oficinas:** PDF em A4 deitado, com as fontes do site (Allura e Nunito, incluídas no projeto sob a licença OFL).
+  - Sai por aluna ou da turma toda (uma página por aluna confirmada), com carga horária, local, conteúdo e código de verificação.
+  - A carga horária pode ser informada na oficina; em branco, usa a duração entre início e término.
+  - A aluna recebe um link (`/certificado/<código>`) que confirma o certificado e baixa o PDF depois que a oficina começa.
+  - Um dia depois da oficina, os lembretes trazem a mensagem de agradecimento com o link.
+- **Equipe (Configurações › Equipe):** acesso de ajudante para quem ajuda na produção.
+  - A ajudante vê encomendas (sem valores), registra material usado, marca como pronta ou entregue, envia fotos, vê agenda e oficinas, baixa certificados, lança "Produzi" e vende no caixa.
+  - Ela não vê valor cobrado, custos, saldos, financeiro, relatórios, compras, contas, orçamentos, clientes nem configurações. O servidor bloqueia essas rotas e tira os valores das respostas, não só da tela.
+  - Desativar o acesso bloqueia na hora, mesmo com o login aberto. Sempre fica pelo menos uma administradora ativa.
+- **Portfólio › Depoimentos:** texto, quem é, estrelas, foto opcional, ordem e publicar ou esconder.
+  - Os publicados aparecem no site depois do portfólio (no celular, em carrossel).
+  - Alguns dias depois de uma entrega quitada, os lembretes sugerem pedir um depoimento à cliente.
+  - Os depoimentos "Exemplo — …" do banco de testes são só para ver o visual: apague antes de publicar o site.
+
 ## Rodar no computador (Windows + NetBeans)
 
 **Pré-requisitos:**
@@ -100,7 +127,7 @@ O estoque de material pode ficar negativo; nesse caso aparece como "registre a c
 ## Publicar na VPS (Docker)
 
 1. Copie a pasta para a VPS, por exemplo `/opt/lenne-atelie`.
-2. Crie o `.env` a partir do `.env.exemplo` e preencha senhas fortes, `JWT_SECRET` e o e-mail da Lenne.
+2. Crie o `.env` a partir do `.env.exemplo` e preencha senhas fortes, `JWT_SECRET`, o e-mail da Lenne e `URL_PUBLICA` (endereço do site, usado nos links de certificado).
 3. Suba os serviços:
    ```
    docker compose up -d --build
@@ -146,6 +173,11 @@ Os testes cobrem:
 - proposta e contrato em PDF
 - agenda e lembretes
 - fotos privadas e publicação no portfólio
+- compra com frete rateado, histórico de preços e cancelamento
+- contas fixas, pagamento no financeiro e precificação automática
+- certificados (aluna, turma e link público)
+- acesso de ajudante sem valores e com rotas bloqueadas
+- depoimentos com foto no site e lembrete de pedir depoimento
 
 ## Atualizar a VPS
 
@@ -154,7 +186,7 @@ git pull
 docker compose up -d --build
 ```
 
-O Flyway aplica sozinho as mudanças no banco, como a V2 desta etapa, sem apagar dados.
+O Flyway aplica sozinho as mudanças no banco, como a V4 desta etapa, sem apagar dados.
 
 ## Segurança
 

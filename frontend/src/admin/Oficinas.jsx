@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api } from '../api.js';
+import { api, sessao } from '../api.js';
 import Icone from '../componentes/Icone.jsx';
 import { Campo, Confirmar, Estado, Modal, ModalForm, Selo, lerForm, useCarregar, useToast, Vazio } from '../componentes/ui.jsx';
 import { STATUS_INSCRICAO, STATUS_OFICINA, dataHora, linkWhats, moeda, telefone } from '../util.js';
@@ -11,8 +11,9 @@ export default function Oficinas() {
   const [form, setForm] = useState(null);
   const [aberta, setAberta] = useState(null);
   const toast = useToast();
+  const ajudante = sessao.ajudante();
   const { dados, erro, carregando, recarregar } = useCarregar(() => api.get('/api/oficinas'));
-  const pix = useCarregar(() => api.get('/api/inscricoes/pix-a-conferir'));
+  const pix = useCarregar(() => (ajudante ? Promise.resolve([]) : api.get('/api/inscricoes/pix-a-conferir')));
 
   const agora = Date.now();
   const proximas = (dados || []).filter((o) => new Date(o.inicio).getTime() >= agora).reverse();
@@ -26,10 +27,10 @@ export default function Oficinas() {
   return (
     <>
       <Topo titulo="Oficinas">
-        <button type="button" className="btn btn-terra" onClick={() => setForm({})}><Icone nome="mais" tamanho={18} largura={3} />Nova oficina</button>
+        {!ajudante && <button type="button" className="btn btn-terra" onClick={() => setForm({})}><Icone nome="mais" tamanho={18} largura={3} />Nova oficina</button>}
       </Topo>
 
-      {(pix.dados?.length > 0 || params.get('pix')) && (
+      {!ajudante && (pix.dados?.length > 0 || params.get('pix')) && (
         <section className="cartao" style={{ background: 'var(--terra-claro)' }} aria-labelledby="t-pix">
           <div className="cartao-titulo"><h2 id="t-pix">Pix a conferir</h2></div>
           {pix.dados?.length === 0 ? <Vazio>Nenhum Pix pendente. Tudo conferido!</Vazio> : (
@@ -53,7 +54,7 @@ export default function Oficinas() {
             <ul className="lista-linhas">
               {passadas.map((o) => (
                 <li key={o.id}>
-                  <div className="info"><p>{o.titulo}</p><p>{dataHora(o.inicio)} · {o.confirmadas} {o.confirmadas === 1 ? 'aluna' : 'alunas'} · {moeda(o.confirmadas * o.valor)}</p></div>
+                  <div className="info"><p>{o.titulo}</p><p>{dataHora(o.inicio)} · {o.confirmadas} {o.confirmadas === 1 ? 'aluna' : 'alunas'}{ajudante ? '' : ` · ${moeda(o.confirmadas * o.valor)}`}</p></div>
                   <button type="button" className="btn btn-claro btn-p" onClick={() => setAberta(o.id)}>Abrir</button>
                 </li>
               ))}
@@ -67,7 +68,7 @@ export default function Oficinas() {
 
       {form && (
         <ModalForm titulo={form.id ? 'Editar oficina' : 'Nova oficina'} aoFechar={() => setForm(null)} aoSalvar={async (fd) => {
-          const d = lerForm(fd, ['vagas', 'valor']);
+          const d = lerForm(fd, ['vagas', 'valor', 'cargaHoraria']);
           d.publicada = fd.get('publicada') === 'on';
           if (form.id) await api.put(`/api/oficinas/${form.id}`, d);
           else await api.post('/api/oficinas', d);
@@ -87,6 +88,11 @@ export default function Oficinas() {
           <label className="checkbox" style={{ alignSelf: 'end', minHeight: 48 }}>
             <input type="checkbox" name="publicada" defaultChecked={form.publicada ?? true} /> Mostrar no site
           </label>
+          <p className="inteiro forte" style={{ marginTop: 6 }}>Certificado</p>
+          <Campo rotulo="Carga horária (horas)" nome="cargaHoraria" tipo="number" min="0.5" max="200" step="0.5" defaultValue={form.cargaHoraria}
+            dica="Em branco, usa a duração entre o início e o término." />
+          <Campo rotulo="Conteúdo (uma linha por tópico)" nome="conteudoProgramatico" linhas={3} defaultValue={form.conteudoProgramatico} inteiro maxLength={4000}
+            placeholder={'Nó quadrado e espiral\nMontagem no aro\nAcabamento com franja'} />
         </ModalForm>
       )}
     </>
@@ -103,14 +109,14 @@ function CartaoOficina({ o, aoAbrir }) {
       </div>
       <div>
         <h3 style={{ fontSize: 22 }}>{o.titulo}</h3>
-        <p style={{ fontWeight: 700, color: 'var(--oliva-texto)' }}>{dataHora(o.inicio)} · {moeda(o.valor)}</p>
+        <p style={{ fontWeight: 700, color: 'var(--oliva-texto)' }}>{dataHora(o.inicio)}{sessao.ajudante() ? '' : ` · ${moeda(o.valor)}`}</p>
       </div>
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 800 }}><span>Vagas</span><span>{ocupadas} de {o.vagas}</span></div>
         <div className="progresso" style={{ marginTop: 8 }}><div style={{ width: `${(ocupadas / o.vagas) * 100}%` }} /></div>
       </div>
       <p style={{ fontSize: 14, fontWeight: 700 }}>
-        {o.confirmadas} confirmadas · {o.aguardandoPix + o.aConferir} aguardando Pix · {o.listaEspera} na espera
+        {o.confirmadas} {o.confirmadas === 1 ? 'confirmada' : 'confirmadas'} · {o.aguardandoPix + o.aConferir} aguardando Pix · {o.listaEspera} na espera
       </p>
       <button type="button" className="btn btn-claro" style={{ alignSelf: 'flex-start' }} onClick={aoAbrir}>Ver inscrições</button>
     </article>
@@ -123,9 +129,15 @@ function DetalheOficina({ id, aoFechar, aoEditar }) {
   const [nova, setNova] = useState(false);
   const [excluir, setExcluir] = useState(false);
   const toast = useToast();
+  const ajudante = sessao.ajudante();
   const o = of.dados;
+  const confirmadas = (ins.dados || []).filter((i) => i.status === 'CONFIRMADA').length;
 
   function atualizar() { of.recarregar(); ins.recarregar(); }
+
+  async function certificados() {
+    try { toast(`${await api.baixar(`/api/oficinas/${id}/certificados`, 'Certificados.pdf')} baixado.`); } catch (e) { toast(e.message, 'erro'); }
+  }
 
   if (nova) {
     return (
@@ -149,19 +161,24 @@ function DetalheOficina({ id, aoFechar, aoEditar }) {
 
   return (
     <Modal titulo={o ? o.titulo : 'Oficina'} aoFechar={aoFechar} largo rodape={o && <>
-      {ins.dados?.length === 0 && <button type="button" className="btn btn-perigo" onClick={() => setExcluir(true)}>Excluir</button>}
-      <button type="button" className="btn btn-claro" onClick={() => aoEditar(o)}><Icone nome="editar" tamanho={18} />Editar</button>
-      <button type="button" className="btn btn-terra" onClick={() => setNova(true)}><Icone nome="mais" tamanho={18} largura={3} />Inscrever aluna</button>
+      {!ajudante && ins.dados?.length === 0 && <button type="button" className="btn btn-perigo" onClick={() => setExcluir(true)}>Excluir</button>}
+      {confirmadas > 0 && <button type="button" className="btn btn-claro" onClick={certificados}><Icone nome="certificado" tamanho={18} />Certificados da turma</button>}
+      {!ajudante && <>
+        <button type="button" className="btn btn-claro" onClick={() => aoEditar(o)}><Icone nome="editar" tamanho={18} />Editar</button>
+        <button type="button" className="btn btn-terra" onClick={() => setNova(true)}><Icone nome="mais" tamanho={18} largura={3} />Inscrever aluna</button>
+      </>}
+      {ajudante && <button type="button" className="btn btn-terra" onClick={aoFechar}>Fechar</button>}
     </>}>
       <Estado carregando={of.carregando || ins.carregando} erro={of.erro || ins.erro}>
         {o && (
           <>
             <p className="forte" style={{ color: 'var(--oliva-texto)', marginBottom: 16 }}>
-              {dataHora(o.inicio)} · {moeda(o.valor)} · {o.vagas - o.vagasRestantes} de {o.vagas} vagas ocupadas
+              {dataHora(o.inicio)}{ajudante ? '' : ` · ${moeda(o.valor)}`} · {o.vagas - o.vagasRestantes} de {o.vagas} vagas ocupadas
+              {o.cargaHorariaCertificado ? ` · certificado de ${String(o.cargaHorariaCertificado).replace('.', ',').replace(',0', '')} h` : ''}
             </p>
             {ins.dados?.length === 0 ? <Vazio>Nenhuma inscrição ainda.</Vazio> : (
               <ul className="lista-linhas">
-                {ins.dados?.map((i) => <LinhaInscricao key={i.id} i={i} aoMudar={atualizar} />)}
+                {ins.dados?.map((i) => <LinhaInscricao key={i.id} i={i} aoMudar={atualizar} comecou={new Date(o.inicio).getTime() <= Date.now()} />)}
               </ul>
             )}
           </>
@@ -171,10 +188,15 @@ function DetalheOficina({ id, aoFechar, aoEditar }) {
   );
 }
 
-function LinhaInscricao({ i, mostrarOficina, aoMudar }) {
+function LinhaInscricao({ i, mostrarOficina, aoMudar, comecou }) {
   const [erro, setErro] = useState(null);
   const [ocupado, setOcupado] = useState(false);
   const toast = useToast();
+  const ajudante = sessao.ajudante();
+
+  async function certificado() {
+    try { toast(`${await api.baixar(`/api/inscricoes/${i.id}/certificado`, 'Certificado.pdf')} baixado.`); } catch (e) { toast(e.message, 'erro'); }
+  }
 
   async function mudar(status, mensagem) {
     setErro(null);
@@ -193,6 +215,8 @@ function LinhaInscricao({ i, mostrarOficina, aoMudar }) {
   const primeiro = i.nome.split(' ')[0];
   const msgConfirmada = `Oi, ${primeiro}! Recebi seu Pix e sua vaga na oficina "${i.oficina}" (${dataHora(i.inicio)}) está confirmada. Até lá!`;
   const msgVaga = `Oi, ${primeiro}! Abriu uma vaga na oficina "${i.oficina}" (${dataHora(i.inicio)}). Ainda tem interesse?`;
+  const linkCertificado = `${window.location.origin}/certificado/${i.codigo}`;
+  const msgCertificado = `Oi, ${primeiro}! Obrigada por participar da oficina "${i.oficina}". Seu certificado está neste link: ${linkCertificado}`;
 
   return (
     <li style={{ flexWrap: 'wrap' }}>
@@ -203,6 +227,11 @@ function LinhaInscricao({ i, mostrarOficina, aoMudar }) {
       </div>
       <Selo mapa={STATUS_INSCRICAO} valor={i.status} />
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {i.status === 'CONFIRMADA' && comecou && <>
+          <button type="button" className="btn btn-claro btn-p" onClick={certificado}><Icone nome="certificado" tamanho={16} />Certificado</button>
+          <a className="btn btn-oliva btn-p" href={linkWhats(i.whatsapp, msgCertificado)} target="_blank" rel="noopener noreferrer"><Icone nome="whats" tamanho={16} />Enviar certificado</a>
+        </>}
+        {!ajudante && <>
         {(i.status === 'AGUARDANDO_PIX' || i.status === 'A_CONFERIR') && (
           <button type="button" className="btn btn-oliva btn-p" disabled={ocupado} onClick={() => mudar('CONFIRMADA', 'Pix confirmado e lançado no financeiro.')}>
             <Icone nome="check" tamanho={16} largura={3} />Confirmar Pix
@@ -211,7 +240,7 @@ function LinhaInscricao({ i, mostrarOficina, aoMudar }) {
         {i.status === 'LISTA_ESPERA' && (
           <button type="button" className="btn btn-claro btn-p" disabled={ocupado} onClick={() => mudar('AGUARDANDO_PIX', 'Movida para a turma, aguardando Pix.')}>Dar a vaga</button>
         )}
-        {i.status === 'CONFIRMADA' && (
+        {i.status === 'CONFIRMADA' && !comecou && (
           <a className="btn btn-claro btn-p" href={linkWhats(i.whatsapp, msgConfirmada)} target="_blank" rel="noopener noreferrer"><Icone nome="whats" tamanho={16} />Avisar</a>
         )}
         {i.status === 'LISTA_ESPERA' && (
@@ -223,6 +252,7 @@ function LinhaInscricao({ i, mostrarOficina, aoMudar }) {
         {i.status === 'CANCELADA' && (
           <button type="button" className="btn btn-fantasma btn-p" disabled={ocupado} onClick={() => mudar('LISTA_ESPERA', 'Voltou para a lista de espera.')}>Reativar</button>
         )}
+        </>}
       </div>
     </li>
   );

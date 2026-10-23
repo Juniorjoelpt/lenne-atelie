@@ -31,9 +31,14 @@ public class AgendaService {
     private final OficinaRepository oficinas;
     private final InscricaoRepository inscricoes;
     private final ClienteRepository clientes;
+    private final ContaFixaRepository contas;
+    private final LancamentoRepository lancamentos;
 
     public AgendaService(CompromissoRepository compromissos, EncomendaRepository encomendas, OficinaRepository oficinas,
-                         InscricaoRepository inscricoes, ClienteRepository clientes) {
+                         InscricaoRepository inscricoes, ClienteRepository clientes, ContaFixaRepository contas,
+                         LancamentoRepository lancamentos) {
+        this.contas = contas;
+        this.lancamentos = lancamentos;
         this.compromissos = compromissos;
         this.encomendas = encomendas;
         this.oficinas = oficinas;
@@ -43,6 +48,12 @@ public class AgendaService {
 
     @Transactional(readOnly = true)
     public List<EventoAgenda> eventos(LocalDate de, LocalDate ate) {
+        return eventos(de, ate, true);
+    }
+
+    /** comContas = false para a ajudante (vencimentos de contas são só da administradora). */
+    @Transactional(readOnly = true)
+    public List<EventoAgenda> eventos(LocalDate de, LocalDate ate, boolean comContas) {
         if (ate.isBefore(de)) {
             throw new RegraNegocioException("O período está invertido.");
         }
@@ -89,6 +100,27 @@ public class AgendaService {
                 if (!dia.isBefore(de) && !dia.isAfter(ate)) {
                     lista.add(new EventoAgenda("ANIVERSARIO", c.getId(), dia, null,
                             "Aniversário: " + c.getNome(), null, null, false));
+                }
+            }
+        }
+
+        if (comContas) {
+            List<java.time.YearMonth> meses = new ArrayList<>();
+            for (java.time.YearMonth m = java.time.YearMonth.from(de); !m.isAfter(java.time.YearMonth.from(ate)); m = m.plusMonths(1)) {
+                meses.add(m);
+            }
+            java.util.Set<String> pagas = new java.util.HashSet<>();
+            lancamentos.findByContaFixaIsNotNullAndCompetenciaIn(meses.stream().map(m -> m.atDay(1)).toList())
+                    .forEach(l -> pagas.add(l.getContaFixa().getId() + ":" + l.getCompetencia()));
+            for (br.com.mssolucoes.atelie.dominio.ContaFixa c : contas.findByAtivaTrueOrderByDiaVencimentoAscNomeAsc()) {
+                for (java.time.YearMonth m : meses) {
+                    LocalDate venc = ContaFixaService.vencimento(c, m);
+                    if (venc.isBefore(de) || venc.isAfter(ate)) {
+                        continue;
+                    }
+                    boolean paga = pagas.contains(c.getId() + ":" + m.atDay(1));
+                    lista.add(new EventoAgenda("CONTA", c.getId(), venc, null, "Vence: " + c.getNome(),
+                            LembreteService.moeda(c.getValor()), paga ? "PAGA" : "ABERTA", paga));
                 }
             }
         }

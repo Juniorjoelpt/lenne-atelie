@@ -34,6 +34,8 @@ public class LembreteService {
     private static final Pattern CHAVE_VALIDA = Pattern.compile("[A-Z]+(:[0-9-]+)+");
     /** Cobrança de saldo volta a aparecer depois de alguns dias, se continuar em aberto. */
     private static final int DIAS_ENTRE_COBRANCAS = 7;
+    /** Por quantos dias depois da oficina o lembrete do certificado fica na lista. */
+    private static final int DIAS_CERTIFICADO = 7;
 
     private final LembreteRepository repo;
     private final InscricaoRepository inscricoes;
@@ -41,10 +43,12 @@ public class LembreteService {
     private final LancamentoRepository lancamentos;
     private final ClienteRepository clientes;
     private final ConfiguracaoService configuracao;
+    private final UrlPublica url;
 
     public LembreteService(LembreteRepository repo, InscricaoRepository inscricoes, EncomendaRepository encomendas,
                            LancamentoRepository lancamentos, ClienteRepository clientes,
-                           ConfiguracaoService configuracao) {
+                           ConfiguracaoService configuracao, UrlPublica url) {
+        this.url = url;
         this.repo = repo;
         this.inscricoes = inscricoes;
         this.encomendas = encomendas;
@@ -63,6 +67,20 @@ public class LembreteService {
         for (Inscricao i : inscricoes.findByStatusInOrderByCriadoEmAsc(
                 EnumSet.of(StatusInscricao.CONFIRMADA, StatusInscricao.AGUARDANDO_PIX))) {
             Oficina o = i.getOficina();
+            // Depois da oficina: agradecer e mandar o link do certificado (até 7 dias depois)
+            if (i.getStatus() == StatusInscricao.CONFIRMADA && o.getStatus() != StatusOficina.CANCELADA
+                    && o.getInicio().isBefore(LocalDateTime.now())
+                    && !o.getInicio().toLocalDate().isBefore(hoje.minusDays(DIAS_CERTIFICADO))) {
+                todos.add(new LembreteResp("CERTIFICADO:" + i.getId(), "CERTIFICADO",
+                        "Certificado: " + o.getTitulo(), "Oficina de " + DIA.format(o.getInicio().toLocalDate()),
+                        i.getNome(), i.getWhatsapp(),
+                        "Oi, " + primeiro(i.getNome()) + "! Obrigada por participar da oficina \"" + o.getTitulo()
+                                + "\". Foi muito bom ter você aqui! Seu certificado está neste link: "
+                                + url.certificado(i.getCodigo())
+                                + " Se quiser, me conta em poucas palavras o que achou da oficina, que eu adoraria "
+                                + "colocar no site. " + assinatura(cfg), o.getInicio().toLocalDate()));
+                continue;
+            }
             if (o.getStatus() != StatusOficina.ABERTA || o.getInicio().isBefore(LocalDateTime.now())) {
                 continue;
             }
@@ -106,6 +124,14 @@ public class LembreteService {
                         "Oi, " + primeiro(c.getNome()) + "! Tudo certo para a entrega da sua encomenda ("
                                 + e.getDescricao() + ") amanhã, " + DIA.format(e.getPrazoEntrega())
                                 + "? Me confirma o melhor horário para você. " + assinatura(cfg), e.getPrazoEntrega()));
+            } else if (e.getStatus() == StatusEncomenda.ENTREGUE && saldo.signum() <= 0 && e.getEntregueEm() != null
+                    && !e.getEntregueEm().isAfter(hoje.minusDays(3)) && !e.getEntregueEm().isBefore(hoje.minusDays(10))) {
+                // Alguns dias depois da entrega (e já quitada): pedir um depoimento para o site
+                todos.add(new LembreteResp("DEPOIMENTO:" + e.getId(), "DEPOIMENTO", "Pedir depoimento: " + e.getDescricao(),
+                        "Entregue em " + DIA.format(e.getEntregueEm()), c.getNome(), c.getWhatsapp(),
+                        "Oi, " + primeiro(c.getNome()) + "! Tudo bem? Espero que esteja gostando da sua peça ("
+                                + e.getDescricao() + "). Se puder, me conta em poucas palavras o que achou? Com a sua "
+                                + "permissão, coloco no site do ateliê. Obrigada pelo carinho! " + assinatura(cfg), hoje));
             } else if (e.getStatus() == StatusEncomenda.ENTREGUE && saldo.signum() > 0) {
                 todos.add(new LembreteResp("SALDO:" + e.getId(), "SALDO", "Saldo em aberto: " + e.getDescricao(),
                         moeda(saldo) + " a receber", c.getNome(), c.getWhatsapp(),

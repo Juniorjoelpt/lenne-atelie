@@ -21,7 +21,7 @@ public final class Dtos {
             @NotBlank(message = "Informe a senha.") String senha) {
     }
 
-    public record LoginResp(String token, String nome, String email) {
+    public record LoginResp(String token, String nome, String email, Perfil perfil) {
     }
 
     public record TrocarSenhaReq(
@@ -175,13 +175,16 @@ public final class Dtos {
             @NotNull @Min(value = 1, message = "Informe pelo menos 1 vaga.") Integer vagas,
             @NotNull(message = "Informe o valor.") @PositiveOrZero BigDecimal valor,
             StatusOficina status,
-            Boolean publicada) {
+            Boolean publicada,
+            @DecimalMin(value = "0.5", message = "Carga horária mínima de meia hora.") @DecimalMax(value = "200", message = "Carga horária acima de 200 horas.") BigDecimal cargaHoraria,
+            @Size(max = 4000) String conteudoProgramatico) {
     }
 
     public record OficinaResp(Long id, String titulo, String descricao, LocalDateTime inicio, LocalDateTime fim,
                               String local, int vagas, BigDecimal valor, StatusOficina status, boolean publicada,
                               long confirmadas, long aConferir, long aguardandoPix, long listaEspera,
-                              long vagasRestantes) {
+                              long vagasRestantes, BigDecimal cargaHoraria, String conteudoProgramatico,
+                              BigDecimal cargaHorariaCertificado) {
     }
 
     public record OficinaPublica(Long id, String titulo, String descricao, LocalDateTime inicio, LocalDateTime fim,
@@ -206,7 +209,7 @@ public final class Dtos {
 
     public record InscricaoResp(Long id, Long oficinaId, String oficina, LocalDateTime inicio, Long clienteId,
                                 String nome, String whatsapp, StatusInscricao status, Origem origem,
-                                LocalDateTime criadoEm) {
+                                LocalDateTime criadoEm, String codigo) {
     }
 
     public record StatusInscricaoReq(
@@ -227,7 +230,8 @@ public final class Dtos {
 
     public record LancamentoResp(Long id, TipoLancamento tipo, CategoriaLancamento categoria, String descricao,
                                  BigDecimal valor, LocalDate data, FormaPagamento formaPagamento,
-                                 Long encomendaId, Long inscricaoId, Long vendaId, boolean automatico) {
+                                 Long encomendaId, Long inscricaoId, Long vendaId, Long compraId, Long contaFixaId,
+                                 boolean automatico) {
     }
 
     public record ValorPorNome(String nome, BigDecimal valor, int percentual) {
@@ -257,7 +261,8 @@ public final class Dtos {
             @NotNull @Positive(message = "A quantidade precisa ser maior que zero.") BigDecimal quantidade,
             /** Na entrada (compra), registra a despesa no financeiro. */
             boolean registrarDespesa,
-            @PositiveOrZero BigDecimal valorCompra) {
+            @PositiveOrZero BigDecimal valorCompra,
+            Long fornecedorId) {
     }
 
     // ---------- Precificação ----------
@@ -266,12 +271,14 @@ public final class Dtos {
             @NotNull @PositiveOrZero(message = "Valor inválido.") BigDecimal salarioDesejado,
             @NotNull @Min(value = 1, message = "Informe as horas de produção por mês.") @Max(value = 400, message = "Horas por mês acima de 400.") Integer horasMes,
             @NotNull @PositiveOrZero(message = "Valor inválido.") BigDecimal custosFixosMensais,
-            @NotNull @PositiveOrZero @Max(value = 500, message = "Margem acima de 500%.") BigDecimal margemPadrao) {
+            @NotNull @PositiveOrZero @Max(value = 500, message = "Margem acima de 500%.") BigDecimal margemPadrao,
+            /** Usa a soma das contas fixas como custos fixos. */
+            Boolean custosFixosAutomatico) {
     }
 
     public record PrecificacaoResp(BigDecimal salarioDesejado, int horasMes, BigDecimal custosFixosMensais,
                                    BigDecimal margemPadrao, BigDecimal valorHora, BigDecimal custoFixoHora,
-                                   boolean configurada) {
+                                   boolean configurada, boolean custosFixosAutomatico, BigDecimal totalContasFixas) {
     }
 
     // ---------- Produtos / fichas técnicas ----------
@@ -449,7 +456,8 @@ public final class Dtos {
 
     // ---------- Site e painel ----------
 
-    public record SitePublico(ConfiguracaoDto atelie, List<OficinaPublica> oficinas, List<PortfolioResp> portfolio) {
+    public record SitePublico(ConfiguracaoDto atelie, List<OficinaPublica> oficinas, List<PortfolioResp> portfolio,
+                              List<DepoimentoResp> depoimentos) {
     }
 
     public record Barra(String rotulo, BigDecimal valor) {
@@ -470,6 +478,140 @@ public final class Dtos {
             List<EncomendaResp> proximasEntregas,
             List<MaterialResp> materiaisBaixos,
             String mesReferencia,
-            int lembretes) {
+            int lembretes,
+            List<ContaAVencer> contasAPagar) {
+    }
+
+    // ---------- Fornecedores e compras ----------
+
+    public record FornecedorReq(
+            @NotBlank(message = "Informe o nome do fornecedor.") @Size(max = 140) String nome,
+            @Size(max = 20) String whatsapp,
+            @Size(max = 160) String contato,
+            @Size(max = 120) String cidade,
+            @Size(max = 4000) String observacoes,
+            Boolean ativo) {
+    }
+
+    public record FornecedorResp(Long id, String nome, String whatsapp, String contato, String cidade,
+                                 String observacoes, boolean ativo, int compras, BigDecimal totalComprado,
+                                 LocalDate ultimaCompra) {
+    }
+
+    public record CompraItemReq(
+            @NotNull(message = "Escolha o material.") Long materialId,
+            @NotNull @Positive(message = "Informe a quantidade comprada.") BigDecimal quantidade,
+            @NotNull @Positive(message = "Informe quanto pagou em cada material.") BigDecimal valor) {
+    }
+
+    public record CompraReq(
+            Long fornecedorId,
+            @NotNull(message = "Informe a data da compra.") LocalDate data,
+            @PositiveOrZero(message = "Frete inválido.") BigDecimal frete,
+            FormaPagamento formaPagamento,
+            @Size(max = 255) String observacoes,
+            /** Vazio ou true: lança a despesa no financeiro. */
+            Boolean registrarDespesa,
+            @NotEmpty(message = "Adicione pelo menos um material.") List<@jakarta.validation.Valid CompraItemReq> itens) {
+    }
+
+    public record CompraItemResp(Long materialId, String materialNome, String unidade, BigDecimal quantidade,
+                                 BigDecimal valor, BigDecimal custoUnitario) {
+    }
+
+    public record CompraResp(Long id, Long fornecedorId, String fornecedorNome, LocalDate data, BigDecimal frete,
+                             BigDecimal total, FormaPagamento formaPagamento, String observacoes, StatusCompra status,
+                             boolean despesaLancada, List<CompraItemResp> itens) {
+    }
+
+    public record ResumoCompras(int ano, int mes, BigDecimal total, int quantidade, List<ValorPorNome> porFornecedor,
+                                List<CompraResp> compras) {
+    }
+
+    public record PrecoPago(Long compraId, LocalDate data, String fornecedorNome, BigDecimal quantidade,
+                            BigDecimal custoUnitario) {
+    }
+
+    /** Último preço pago em cada fornecedor; o mais barato vem marcado. */
+    public record PrecoPorFornecedor(Long fornecedorId, String fornecedorNome, BigDecimal ultimoCusto, LocalDate data,
+                                     boolean maisBarato) {
+    }
+
+    public record HistoricoPrecos(Long materialId, String nome, String unidade, BigDecimal custoAtual,
+                                  List<PrecoPago> compras, List<PrecoPorFornecedor> porFornecedor) {
+    }
+
+    // ---------- Contas fixas ----------
+
+    public record ContaFixaReq(
+            @NotBlank(message = "Informe o nome da conta.") @Size(max = 120) String nome,
+            @NotNull(message = "Informe o valor.") @Positive(message = "O valor precisa ser maior que zero.") BigDecimal valor,
+            @NotNull(message = "Informe o dia do vencimento.") @Min(value = 1, message = "Dia de 1 a 31.") @Max(value = 31, message = "Dia de 1 a 31.") Integer diaVencimento,
+            Boolean entraNaPrecificacao,
+            Boolean ativa,
+            @Size(max = 255) String observacoes) {
+    }
+
+    public record ContaFixaResp(Long id, String nome, BigDecimal valor, int diaVencimento,
+                                boolean entraNaPrecificacao, boolean ativa, String observacoes) {
+    }
+
+    /** situacao: PAGA, VENCIDA, HOJE, PROXIMA (até 3 dias), A_VENCER. */
+    public record ContaDoMes(ContaFixaResp conta, LocalDate vencimento, String situacao, Long lancamentoId,
+                             BigDecimal valorPago, LocalDate pagoEm, FormaPagamento formaPagamento) {
+    }
+
+    public record ContasDoMes(int ano, int mes, BigDecimal previsto, BigDecimal pago, BigDecimal falta,
+                              int vencidas, BigDecimal totalPrecificacao, boolean custosFixosAutomatico,
+                              List<ContaDoMes> contas, List<ContaFixaResp> inativas) {
+    }
+
+    public record PagarContaReq(
+            @NotNull Integer ano,
+            @NotNull @Min(1) @Max(12) Integer mes,
+            @NotNull(message = "Informe o valor pago.") @Positive(message = "O valor precisa ser maior que zero.") BigDecimal valor,
+            LocalDate data,
+            FormaPagamento formaPagamento) {
+    }
+
+    public record ContaAVencer(Long id, String nome, BigDecimal valor, LocalDate vencimento, boolean vencida) {
+    }
+
+    // ---------- Certificados ----------
+
+    public record CertificadoPublico(String nome, String oficina, LocalDate data, BigDecimal cargaHoraria,
+                                     String local, String atelie, boolean disponivel) {
+    }
+
+    // ---------- Equipe ----------
+
+    public record UsuarioReq(
+            @NotBlank(message = "Informe o nome.") @Size(max = 120) String nome,
+            @NotBlank(message = "Informe o e-mail.") @Email(message = "E-mail inválido.") @Size(max = 160) String email,
+            Perfil perfil,
+            /** Obrigatória ao criar; ao editar, em branco mantém a atual. */
+            @Size(min = 8, max = 100, message = "A senha precisa ter pelo menos 8 caracteres.") String senha,
+            Boolean ativo) {
+    }
+
+    public record UsuarioResp(Long id, String nome, String email, Perfil perfil, boolean ativo,
+                              LocalDateTime criadoEm, boolean euMesma) {
+    }
+
+    // ---------- Depoimentos ----------
+
+    public record DepoimentoReq(
+            @NotBlank(message = "Informe o nome de quem escreveu.") @Size(max = 120) String nome,
+            @Size(max = 120) String contexto,
+            @NotBlank(message = "Escreva o depoimento.") @Size(max = 600, message = "Use até 600 caracteres.") String texto,
+            @Min(value = 1, message = "De 1 a 5 estrelas.") @Max(value = 5, message = "De 1 a 5 estrelas.") Integer estrelas,
+            Boolean publicado,
+            Integer ordem,
+            /** true = tira a foto atual. */
+            Boolean removerFoto) {
+    }
+
+    public record DepoimentoResp(Long id, String nome, String contexto, String texto, int estrelas, String foto,
+                                 boolean publicado, int ordem) {
     }
 }

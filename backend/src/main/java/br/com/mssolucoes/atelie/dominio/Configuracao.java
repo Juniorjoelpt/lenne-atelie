@@ -60,6 +60,10 @@ public class Configuracao {
     @Column(name = "custos_fixos_mensais", nullable = false, precision = 12, scale = 2)
     private java.math.BigDecimal custosFixosMensais = java.math.BigDecimal.ZERO;
 
+    /** Quando ligado, os custos fixos acima são a soma das contas fixas marcadas para a precificação. */
+    @Column(name = "custos_fixos_automatico", nullable = false)
+    private boolean custosFixosAutomatico;
+
     /** Margem de lucro padrão, em %, aplicada sobre o custo total. */
     @Column(name = "margem_padrao", nullable = false, precision = 5, scale = 2)
     private java.math.BigDecimal margemPadrao = java.math.BigDecimal.valueOf(30);

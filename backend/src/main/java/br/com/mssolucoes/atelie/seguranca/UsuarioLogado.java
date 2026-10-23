@@ -1,4 +1,10 @@
 package br.com.mssolucoes.atelie.seguranca;
 
-public record UsuarioLogado(Long id, String nome, String email) {
+import br.com.mssolucoes.atelie.dominio.Enums.Perfil;
+
+public record UsuarioLogado(Long id, String nome, String email, Perfil perfil) {
+
+    public boolean ajudante() {
+        return perfil == Perfil.AJUDANTE;
+    }
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api.js';
+import { api, sessao } from '../api.js';
 import Icone from '../componentes/Icone.jsx';
 import { Campo, Confirmar, Estado, ModalForm, lerForm, useCarregar, useToast, Vazio } from '../componentes/ui.jsx';
 import { STATUS_ENCOMENDA, hojeIso } from '../util.js';
@@ -12,8 +12,8 @@ const SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 export const TIPOS_COMPROMISSO = {
   VISITA: 'Visita técnica', PROVA: 'Prova / ajuste', REUNIAO: 'Reunião', PRODUCAO: 'Dia de produção', COMPRA: 'Compra de material', OUTRO: 'Outro',
 };
-const ROTULO_TIPO = { ENTREGA: 'Entrega', OFICINA: 'Oficina', COMPROMISSO: 'Compromisso', ANIVERSARIO: 'Aniversário' };
-const COR_PONTO = { ENTREGA: 'var(--terra-vivo)', OFICINA: 'var(--oliva)', COMPROMISSO: 'var(--ocre)', ANIVERSARIO: '#8E5C8E' };
+const ROTULO_TIPO = { ENTREGA: 'Entrega', OFICINA: 'Oficina', COMPROMISSO: 'Compromisso', ANIVERSARIO: 'Aniversário', CONTA: 'Conta' };
+const COR_PONTO = { ENTREGA: 'var(--terra-vivo)', OFICINA: 'var(--oliva)', COMPROMISSO: 'var(--ocre)', ANIVERSARIO: '#8E5C8E', CONTA: '#5B4F9A' };
 
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
@@ -71,7 +71,7 @@ export default function Agenda() {
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <div className="legenda-linha" style={{ margin: 0 }} aria-hidden="true">
-            {Object.entries(ROTULO_TIPO).map(([k, r]) => <span key={k}><i style={{ background: COR_PONTO[k] }} />{r}</span>)}
+            {Object.entries(ROTULO_TIPO).filter(([k]) => k !== 'CONTA' || !sessao.ajudante()).map(([k, r]) => <span key={k}><i style={{ background: COR_PONTO[k] }} />{r}</span>)}
           </div>
           <button type="button" className="btn btn-claro btn-p" onClick={() => { setRef({ ano: hoje.getFullYear(), mes: hoje.getMonth() }); setSelecionado(hojeTxt); }}>Hoje</button>
         </div>
@@ -93,7 +93,7 @@ export default function Agenda() {
                   <span className="num-dia">{d.getDate()}</span>
                   {evs.slice(0, 3).map((e) => (
                     <span key={`${e.tipo}${e.id}`} className={`evento ev-${e.tipo} ${e.concluido ? 'ev-concluido' : ''}`}>
-                      {e.hora ? `${e.hora.slice(0, 5)} ` : ''}{e.titulo.replace(/^(Entrega|Oficina|Aniversário): /, '')}
+                      {e.hora ? `${e.hora.slice(0, 5)} ` : ''}{e.titulo.replace(/^(Entrega|Oficina|Aniversário|Vence): /, '')}
                     </span>
                   ))}
                   {evs.length > 3 && <span className="mais">+{evs.length - 3}</span>}
@@ -131,11 +131,13 @@ function LinhaEvento({ e, mostrarData, aoAbrir }) {
         {ROTULO_TIPO[e.tipo]}
         {e.tipo === 'COMPROMISSO' && TIPOS_COMPROMISSO[e.status] ? ` · ${TIPOS_COMPROMISSO[e.status]}` : ''}
         {e.tipo === 'ENTREGA' && STATUS_ENCOMENDA[e.status] ? ` · ${STATUS_ENCOMENDA[e.status][0]}` : ''}
+        {e.tipo === 'CONTA' ? (e.concluido ? ' · paga' : ' · a pagar') : ''}
         {e.detalhe ? ` · ${e.detalhe}` : ''}
       </p>
     </div>
   );
-  const destino = { ENTREGA: `/admin/encomendas?abrir=${e.id}`, OFICINA: '/admin/oficinas', ANIVERSARIO: '/admin/lembretes' }[e.tipo];
+  const destino = { ENTREGA: `/admin/encomendas?abrir=${e.id}`, OFICINA: '/admin/oficinas',
+    ANIVERSARIO: sessao.ajudante() ? null : '/admin/lembretes', CONTA: `/admin/financeiro/contas` }[e.tipo];
   return (
     <li>
       <span className="marca-tipo" style={{ background: COR_PONTO[e.tipo] }} aria-hidden="true" />
@@ -143,7 +145,7 @@ function LinhaEvento({ e, mostrarData, aoAbrir }) {
       {conteudo}
       {e.tipo === 'COMPROMISSO'
         ? <button type="button" className="btn btn-claro btn-p" onClick={aoAbrir}>Abrir</button>
-        : <Link to={destino} className="btn btn-claro btn-p">Ver</Link>}
+        : destino && <Link to={destino} className="btn btn-claro btn-p">Ver</Link>}
     </li>
   );
 }

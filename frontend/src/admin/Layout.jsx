@@ -4,18 +4,19 @@ import { api, sessao } from '../api.js';
 import Icone from '../componentes/Icone.jsx';
 import { primeiroNome } from '../util.js';
 
+// [caminho, ícone, rótulo, fim exato, ajudante vê]
 const MENU = [
-  ['/admin', 'painel', 'Painel', true],
+  ['/admin', 'painel', 'Painel', true, true],
   ['/admin/orcamentos', 'orcamento', 'Orçamentos'],
-  ['/admin/encomendas', 'encomenda', 'Encomendas'],
-  ['/admin/produtos', 'etiqueta', 'Produtos'],
-  ['/admin/vendas', 'sacola', 'Vendas'],
-  ['/admin/agenda', 'calendario', 'Agenda'],
-  ['/admin/oficinas', 'oficina', 'Oficinas'],
+  ['/admin/encomendas', 'encomenda', 'Encomendas', false, true],
+  ['/admin/produtos', 'etiqueta', 'Produtos', false, true],
+  ['/admin/vendas', 'sacola', 'Vendas', false, true],
+  ['/admin/agenda', 'calendario', 'Agenda', false, true],
+  ['/admin/oficinas', 'oficina', 'Oficinas', false, true],
   ['/admin/clientes', 'cliente', 'Clientes'],
   ['/admin/financeiro', 'financeiro', 'Financeiro'],
   ['/admin/relatorios', 'grafico', 'Relatórios'],
-  ['/admin/materiais', 'material', 'Materiais'],
+  ['/admin/materiais', 'material', 'Materiais', false, true],
   ['/admin/portfolio', 'portfolio', 'Portfólio'],
   ['/admin/configuracoes', 'config', 'Configurações'],
 ];
@@ -26,13 +27,27 @@ export default function Layout() {
   const [lembretes, setLembretes] = useState(0);
   const local = useLocation();
   const ir = useNavigate();
-  const nome = sessao.nome();
+  const [nome, setNome] = useState(sessao.nome());
+  const [ajudante, setAjudante] = useState(sessao.ajudante());
+
+  // Confere o perfil no servidor (pode ter mudado desde o login)
+  useEffect(() => {
+    api.get('/api/auth/eu').then((eu) => {
+      if (!eu) return;
+      const mudou = (eu.perfil === 'AJUDANTE') !== sessao.ajudante();
+      sessao.atualizar(eu.nome, eu.perfil);
+      setNome(eu.nome);
+      setAjudante(eu.perfil === 'AJUDANTE');
+      if (mudou) window.location.reload();
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     setAberto(false);
+    if (ajudante) return;
     api.get('/api/inscricoes/pix-a-conferir').then((l) => setPix(l.length)).catch(() => {});
     api.get('/api/lembretes').then((l) => setLembretes(l.length)).catch(() => {});
-  }, [local.pathname]);
+  }, [local.pathname, ajudante]);
 
   function sair() {
     sessao.sair();
@@ -46,9 +61,10 @@ export default function Layout() {
         <div className="lateral-perfil">
           <div className="avatar" aria-hidden="true">{(nome || 'L').charAt(0)}</div>
           <p style={{ fontSize: 22, fontWeight: 900 }}>Olá, {primeiroNome(nome) || 'Lenne'}!</p>
+          {ajudante && <span className="selo selo-areia" style={{ alignSelf: 'center' }}>Acesso de ajudante</span>}
         </div>
         <nav>
-          {MENU.map(([para, icone, rotulo, fim]) => (
+          {MENU.filter((m) => !ajudante || m[4]).map(([para, icone, rotulo, fim]) => (
             <NavLink key={para} to={para} end={fim}>
               <Icone nome={icone} />{rotulo}
               {para === '/admin/oficinas' && pix > 0 && <span className="contador" aria-label={`${pix} Pix a conferir`}>{pix}</span>}
@@ -71,6 +87,7 @@ export default function Layout() {
           </div>
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 'auto' }}>
+          {ajudante && <Link to="/admin/senha" className="btn btn-fantasma" style={{ justifyContent: 'flex-start' }}><Icone nome="config" />Minha senha</Link>}
           <a href="/" target="_blank" rel="noopener noreferrer" className="btn btn-fantasma" style={{ justifyContent: 'flex-start' }}><Icone nome="site" />Ver o site</a>
           <button type="button" className="btn btn-fantasma" style={{ justifyContent: 'flex-start' }} onClick={sair}><Icone nome="sair" />Sair</button>
         </div>
@@ -82,6 +99,19 @@ export default function Layout() {
         <Outlet />
       </main>
     </div>
+  );
+}
+
+/** Abas no topo de uma área (ex.: Financeiro › Lançamentos | Contas fixas). itens = [[caminho, rótulo, ícone]] */
+export function Abas({ itens }) {
+  return (
+    <nav className="abas" aria-label="Seções">
+      {itens.map(([para, rotulo, icone]) => (
+        <NavLink key={para} to={para} end className={({ isActive }) => `aba ${isActive ? 'ativa' : ''}`}>
+          {icone && <Icone nome={icone} tamanho={18} />}{rotulo}
+        </NavLink>
+      ))}
+    </nav>
   );
 }
 

@@ -1,5 +1,7 @@
 server:
   port: ${PORT:8080}
+  # Atrás do Nginx: respeita X-Forwarded-Proto/Host para montar links https corretos
+  forward-headers-strategy: native
   servlet:
     encoding:
       charset: UTF-8
@@ -42,6 +44,8 @@ atelie:
     nome: ${ADMIN_NOME:Lenne Carvalho}
     email: ${ADMIN_EMAIL:lenne@atelie.local}
     senha: ${ADMIN_SENHA:trocar123}
+  # Endereço do site nos links enviados às clientes (certificados). Vazio = o endereço aberto no navegador.
+  url-publica: ${URL_PUBLICA:}
   uploads-dir: ${UPLOADS_DIR:./uploads}
   # Fotos das encomendas: fora da pasta pública, só abrem com login
   uploads-privados-dir: ${UPLOADS_PRIVADOS_DIR:./uploads-privados}

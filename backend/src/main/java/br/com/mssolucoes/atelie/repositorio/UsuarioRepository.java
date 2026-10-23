@@ -8,4 +8,8 @@ import java.util.Optional;
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     Optional<Usuario> findByEmailIgnoreCase(String email);
+
+    java.util.List<Usuario> findAllByOrderByNomeAsc();
+
+    long countByPerfilAndAtivoTrue(br.com.mssolucoes.atelie.dominio.Enums.Perfil perfil);
 }

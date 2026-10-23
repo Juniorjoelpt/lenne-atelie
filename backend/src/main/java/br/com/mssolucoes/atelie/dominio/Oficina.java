@@ -45,6 +45,14 @@ public class Oficina {
     @Column(nullable = false)
     private boolean publicada = true;
 
+    /** Horas que saem no certificado. Vazio = calculado pelo início e fim. */
+    @Column(name = "carga_horaria", precision = 5, scale = 1)
+    private BigDecimal cargaHoraria;
+
+    /** O que foi ensinado (sai no verso do certificado). */
+    @Column(name = "conteudo_programatico", columnDefinition = "TEXT")
+    private String conteudoProgramatico;
+
     @Column(name = "criado_em", nullable = false)
     private LocalDateTime criadoEm = LocalDateTime.now();
 }

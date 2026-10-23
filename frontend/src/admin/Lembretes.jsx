@@ -12,6 +12,8 @@ const TIPOS = {
   ENTREGA: ['Entrega amanhã', 'terra', 'calendario'],
   SALDO: ['Saldo em aberto', 'ocre', 'dinheiro'],
   ANIVERSARIO: ['Aniversário', 'areia', 'cliente'],
+  CERTIFICADO: ['Certificado', 'oliva', 'certificado'],
+  DEPOIMENTO: ['Pedir depoimento', 'terra', 'aspas'],
 };
 
 /** Mensagens prontas do dia. Ela toca em "Enviar", o WhatsApp abre com o texto, e o lembrete sai da lista. */

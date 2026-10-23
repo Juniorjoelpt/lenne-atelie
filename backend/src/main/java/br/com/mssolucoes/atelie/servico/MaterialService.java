@@ -26,14 +26,20 @@ public class MaterialService {
     private final LancamentoRepository lancamentos;
     private final br.com.mssolucoes.atelie.repositorio.ProdutoRepository produtos;
     private final br.com.mssolucoes.atelie.repositorio.ConsumoMaterialRepository consumos;
+    private final br.com.mssolucoes.atelie.repositorio.CompraItemRepository itensCompra;
+    private final CompraService compras;
 
     public MaterialService(MaterialRepository repo, LancamentoRepository lancamentos,
                            br.com.mssolucoes.atelie.repositorio.ProdutoRepository produtos,
-                           br.com.mssolucoes.atelie.repositorio.ConsumoMaterialRepository consumos) {
+                           br.com.mssolucoes.atelie.repositorio.ConsumoMaterialRepository consumos,
+                           br.com.mssolucoes.atelie.repositorio.CompraItemRepository itensCompra,
+                           CompraService compras) {
         this.repo = repo;
         this.lancamentos = lancamentos;
         this.produtos = produtos;
         this.consumos = consumos;
+        this.itensCompra = itensCompra;
+        this.compras = compras;
     }
 
     @Transactional(readOnly = true)
@@ -70,6 +76,12 @@ public class MaterialService {
                         + " " + m.getUnidade() + " em estoque.");
             }
             m.setQuantidade(m.getQuantidade().subtract(r.quantidade()));
+        } else if (r.valorCompra() != null && r.valorCompra().signum() > 0) {
+            // Compra com valor: entra no histórico de preços (e no fornecedor, se escolhido)
+            compras.registrar(new br.com.mssolucoes.atelie.dto.Dtos.CompraReq(r.fornecedorId(), LocalDate.now(),
+                    BigDecimal.ZERO, FormaPagamento.PIX, null, r.registrarDespesa(),
+                    List.of(new br.com.mssolucoes.atelie.dto.Dtos.CompraItemReq(m.getId(), r.quantidade(), r.valorCompra()))));
+            return paraResp(buscar(id));
         } else {
             m.setQuantidade(m.getQuantidade().add(r.quantidade()));
             boolean informouValor = r.valorCompra() != null && r.valorCompra().signum() > 0;
@@ -100,8 +112,8 @@ public class MaterialService {
         if (produtos.existsByMateriaisMaterialId(id)) {
             throw new RegraNegocioException("Este material está em fichas técnicas. Tire-o das fichas antes de excluir.");
         }
-        if (consumos.existsByMaterialId(id)) {
-            throw new RegraNegocioException("Este material já foi usado em encomendas ou produção e faz parte do histórico.");
+        if (consumos.existsByMaterialId(id) || itensCompra.existsByMaterialId(id)) {
+            throw new RegraNegocioException("Este material já foi comprado ou usado e faz parte do histórico.");
         }
         repo.delete(m);
     }

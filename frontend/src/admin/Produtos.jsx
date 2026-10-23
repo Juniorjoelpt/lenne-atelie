@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api.js';
+import { api, sessao } from '../api.js';
 import Icone from '../componentes/Icone.jsx';
 import { Campo, Confirmar, Estado, Modal, ModalForm, lerForm, useCarregar, useToast, Vazio } from '../componentes/ui.jsx';
 import { FRENTES, calcularFicha, moeda, moedaUnit, qtd, qtdUn } from '../util.js';
@@ -14,8 +14,9 @@ export default function Produtos() {
   const [produzir, setProduzir] = useState(null);
   const [excluir, setExcluir] = useState(null);
   const toast = useToast();
+  const ajudante = sessao.ajudante();
   const produtos = useCarregar(() => api.get('/api/produtos'));
-  const prec = useCarregar(() => api.get('/api/configuracoes/precificacao'));
+  const prec = useCarregar(() => (ajudante ? Promise.resolve({ configurada: true }) : api.get('/api/configuracoes/precificacao')));
 
   const lista = (produtos.dados || []).filter((p) =>
     filtro === 'INATIVAS' ? !p.ativo : p.ativo && (filtro === 'TODAS' || p.prontaEntrega));
@@ -24,11 +25,13 @@ export default function Produtos() {
     <>
       <Topo titulo="Produtos">
         <Link to="/admin/vendas?nova=1" className="btn btn-claro"><Icone nome="sacola" tamanho={18} />Nova venda</Link>
-        <button type="button" className="btn btn-terra" onClick={() => setFicha({})}><Icone nome="mais" tamanho={18} largura={3} />Nova peça</button>
+        {!ajudante && <button type="button" className="btn btn-terra" onClick={() => setFicha({})}><Icone nome="mais" tamanho={18} largura={3} />Nova peça</button>}
       </Topo>
       <p className="mudo forte" style={{ marginTop: -10 }}>
-        Cada peça tem a sua ficha técnica: materiais, horas e embalagem. O sistema calcula o custo e sugere o preço.
-        Peças de pronta-entrega também têm estoque para vender no ateliê e nas feiras.
+        {ajudante
+          ? 'Terminou peças de pronta-entrega? Toque em "Produzi": elas entram no estoque e os materiais saem sozinhos.'
+          : <>Cada peça tem a sua ficha técnica: materiais, horas e embalagem. O sistema calcula o custo e sugere o preço.
+            Peças de pronta-entrega também têm estoque para vender no ateliê e nas feiras.</>}
       </p>
 
       {prec.dados && !prec.dados.configurada && (
@@ -49,7 +52,9 @@ export default function Produtos() {
           </Vazio></div>
         ) : (
           <div className="grade-fichas">
-            {lista.map((p) => <CartaoProduto key={p.id} p={p} aoEditar={() => setFicha(p)} aoProduzir={() => setProduzir(p)} aoExcluir={() => setExcluir(p)} />)}
+            {lista.map((p) => (ajudante
+              ? <CartaoProducao key={p.id} p={p} aoProduzir={() => setProduzir(p)} />
+              : <CartaoProduto key={p.id} p={p} aoEditar={() => setFicha(p)} aoProduzir={() => setProduzir(p)} aoExcluir={() => setExcluir(p)} />))}
           </div>
         )}
       </Estado>
@@ -80,6 +85,24 @@ export default function Produtos() {
         aoFechar={() => setExcluir(null)}
         aoConfirmar={async () => { await api.del(`/api/produtos/${excluir.id}`); toast('Peça excluída.'); setExcluir(null); produtos.recarregar(); }} />}
     </>
+  );
+}
+
+/** Cartão da ajudante: o que vai em cada peça e quantas estão prontas, sem custos. */
+function CartaoProducao({ p, aoProduzir }) {
+  return (
+    <article className="cartao" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        <span className="selo selo-areia">{FRENTES[p.frente]}</span>
+        {p.prontaEntrega && <span className={`selo ${p.estoque > 0 ? 'selo-oliva' : 'selo-perigo'}`}>{p.estoque > 0 ? `${p.estoque} ${p.estoque === 1 ? 'pronta' : 'prontas'}` : 'sem peças prontas'}</span>}
+      </div>
+      <h2 style={{ fontSize: 21 }}>{p.nome}</h2>
+      <p className="mudo forte" style={{ fontSize: 14 }}>
+        {p.materiais.length ? `Por peça: ${p.materiais.map((m) => `${m.materialNome} (${qtdUn(m.quantidade, m.unidade)})`).join(', ')}` : 'Sem materiais na ficha.'}
+        {Number(p.horasMaoObra) > 0 ? ` · cerca de ${qtd(p.horasMaoObra)} h` : ''}
+      </p>
+      {p.prontaEntrega && p.ativo && <button type="button" className="btn btn-oliva btn-p" style={{ alignSelf: 'flex-start', marginTop: 'auto' }} onClick={aoProduzir}><Icone nome="mais" tamanho={16} largura={3} />Produzi</button>}
+    </article>
   );
 }
 

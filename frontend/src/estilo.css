@@ -407,3 +407,61 @@ select.entrada { padding-right: 36px; }
 .foto-card figcaption { font-size: 12.5px; font-weight: 700; padding: 0 2px; }
 .botao-upload { position: relative; overflow: hidden; }
 .botao-upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+/* Abas de uma área (Financeiro › Contas fixas…) */
+.abas { display: flex; gap: 6px; padding: 6px; border-radius: 999px; background: var(--afundado); box-shadow: var(--afunda); align-self: flex-start; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.abas::-webkit-scrollbar { display: none; }
+.aba { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 18px; border-radius: 999px; font-weight: 800; color: var(--marrom-2); text-decoration: none; white-space: nowrap; }
+.aba:hover { color: var(--marrom); }
+.aba.ativa { background: var(--terra); color: #fff; box-shadow: var(--sombra-p); }
+
+/* Contas fixas */
+.conta-linha { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 14px 0; border-top: 1px solid #EADFCD; }
+.conta-linha:first-child { border-top: 0; }
+.conta-linha .dia { width: 52px; height: 52px; border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 900; line-height: 1; box-shadow: var(--sombra-p); flex: 0 0 auto; }
+.conta-linha .dia small { font-size: 10px; font-weight: 800; text-transform: uppercase; margin-top: 3px; }
+.conta-linha .info { flex: 1 1 200px; min-width: 0; }
+.conta-linha .info p:first-child { font-weight: 800; }
+.conta-linha .info p + p { font-size: 14px; color: var(--marrom-2); }
+.conta-linha .valor { font-weight: 900; font-variant-numeric: tabular-nums; min-width: 96px; text-align: right; }
+.conta-linha .acoes { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 560px) {
+  .conta-linha .valor { text-align: left; min-width: 0; }
+  .conta-linha .acoes { flex: 1 1 100%; justify-content: flex-start; }
+}
+.ev-CONTA { background: #E4E0F0; color: #3E3768; }
+
+/* Itens de compra */
+.itens-compra { display: flex; flex-direction: column; gap: 10px; }
+.item-compra { display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+.item-compra .custo { font-size: 13px; font-weight: 700; color: var(--marrom-2); grid-column: 1 / -1; margin-top: -4px; }
+@media (max-width: 560px) {
+  .item-compra { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
+  .item-compra .campo:first-child { grid-column: 1 / -1; }
+}
+.mais-barato { background: var(--oliva-claro); }
+
+/* Depoimentos (sistema e site) */
+.estrelas { display: inline-flex; gap: 2px; color: var(--ocre); }
+.estrelas .apagada { color: #DCCDB4; }
+.depo-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
+.depo-card { background: var(--cru); border-radius: 26px; padding: 20px; box-shadow: var(--sombra-p); display: flex; flex-direction: column; gap: 12px; margin: 0; min-width: 0; }
+.depo-card blockquote { margin: 0; font-size: 16px; line-height: 1.55; overflow-wrap: anywhere; }
+.depo-card blockquote::before { content: '“'; font-family: var(--cursiva); font-size: 54px; line-height: 0; vertical-align: -22px; color: var(--terra-vivo); margin-right: 4px; }
+.depo-autor { display: flex; align-items: center; gap: 12px; margin-top: auto; }
+.depo-autor .foto { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; box-shadow: var(--sombra-p); background: var(--areia); display: flex; align-items: center; justify-content: center; font-weight: 900; color: var(--terra); }
+.depo-autor p { line-height: 1.25; }
+.depo-autor p + p { font-size: 13.5px; color: var(--marrom-2); font-weight: 700; }
+.depo-card.rascunho { opacity: .7; outline: 2px dashed #D9C8AE; outline-offset: -6px; }
+
+/* Certificado (página pública) */
+.cert-pagina { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+.cert-caixa { width: min(560px, 100%); background: var(--cru); border-radius: 34px; box-shadow: var(--sombra); padding: 34px 28px; text-align: center; display: flex; flex-direction: column; gap: 14px; align-items: center; }
+.cert-caixa .nome { font-family: var(--cursiva); font-size: 48px; color: var(--terra); line-height: 1.05; overflow-wrap: anywhere; }
+.link-botao { background: none; border: 0; padding: 0; font: inherit; font-weight: 800; color: var(--terra); text-decoration: underline; cursor: pointer; }
+.depo-site { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+.depo-site .depo-card { padding: 24px; border-radius: 30px; }
+@media (max-width: 720px) {
+  .depo-site { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 14px; padding: 4px 4px 16px; margin: 0 -4px; scrollbar-width: thin; }
+  .depo-site .depo-card { flex: 0 0 86%; scroll-snap-align: start; }
+}

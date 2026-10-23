@@ -27,10 +27,12 @@ public class PrecificacaoService {
 
     private final ConfiguracaoService configuracao;
     private final ConfiguracaoRepository repo;
+    private final ContaFixaService contas;
 
-    public PrecificacaoService(ConfiguracaoService configuracao, ConfiguracaoRepository repo) {
+    public PrecificacaoService(ConfiguracaoService configuracao, ConfiguracaoRepository repo, ContaFixaService contas) {
         this.configuracao = configuracao;
         this.repo = repo;
+        this.contas = contas;
     }
 
     /** Parâmetros já calculados, lidos uma vez por requisição. */
@@ -49,7 +51,7 @@ public class PrecificacaoService {
 
     @Transactional(readOnly = true)
     public PrecificacaoResp resp() {
-        return paraResp(configuracao.atual());
+        return paraResp(configuracao.atual(), contas.totalPrecificacao());
     }
 
     @Transactional
@@ -57,10 +59,12 @@ public class PrecificacaoService {
         Configuracao c = repo.findById(Configuracao.ID_UNICO).orElseGet(ConfiguracaoService::padrao);
         c.setSalarioDesejado(r.salarioDesejado());
         c.setHorasMes(r.horasMes());
-        c.setCustosFixosMensais(r.custosFixosMensais());
+        BigDecimal totalContas = contas.totalPrecificacao();
+        c.setCustosFixosAutomatico(Boolean.TRUE.equals(r.custosFixosAutomatico()));
+        c.setCustosFixosMensais(c.isCustosFixosAutomatico() ? totalContas : r.custosFixosMensais());
         c.setMargemPadrao(r.margemPadrao());
         c.setAtualizadoEm(LocalDateTime.now());
-        return paraResp(repo.save(c));
+        return paraResp(repo.save(c), totalContas);
     }
 
     /** Custo dos materiais de UMA peça, pela ficha, com o preço atual de cada material. */
@@ -92,12 +96,12 @@ public class PrecificacaoService {
         return new CustoFicha(materiais, maoObra, fixo, outros, total, margem, sugerido, atual, lucro, porHora);
     }
 
-    private static PrecificacaoResp paraResp(Configuracao c) {
+    private static PrecificacaoResp paraResp(Configuracao c, BigDecimal totalContas) {
         BigDecimal horas = BigDecimal.valueOf(Math.max(1, c.getHorasMes()));
         return new PrecificacaoResp(c.getSalarioDesejado(), c.getHorasMes(), c.getCustosFixosMensais(),
                 c.getMargemPadrao(),
                 c.getSalarioDesejado().divide(horas, 2, RoundingMode.HALF_UP),
                 c.getCustosFixosMensais().divide(horas, 2, RoundingMode.HALF_UP),
-                c.getSalarioDesejado().signum() > 0);
+                c.getSalarioDesejado().signum() > 0, c.isCustosFixosAutomatico(), totalContas);
     }
 }

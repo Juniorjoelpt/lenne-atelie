@@ -88,6 +88,8 @@ export default function Site() {
 
         <Portfolio fotos={fotos} instagram={atelie.instagram} />
 
+        {site?.depoimentos?.length > 0 && <Depoimentos lista={site.depoimentos} />}
+
         <section id="oficinas" className="envolve secao">
           <div className="bloco" style={{ background: 'var(--oliva-menu)' }}>
             <p className="sobretitulo" style={{ color: 'var(--oliva-texto)' }}>Agenda</p>
@@ -205,6 +207,29 @@ function Decoracao({ indice }) {
       </g>
       <circle cx="60" cy="62" r="6" fill={cores[indice]} />
     </svg>
+  );
+}
+
+function Depoimentos({ lista }) {
+  return (
+    <section id="depoimentos" className="envolve secao" aria-labelledby="depo-titulo">
+      <p className="sobretitulo">Depoimentos</p>
+      <h2 id="depo-titulo" className="titulo-secao" style={{ marginBottom: 24 }}>Quem já levou um pedacinho do ateliê</h2>
+      <div className="depo-site">
+        {lista.map((d) => (
+          <figure key={d.id} className="depo-card">
+            <span className="estrelas" role="img" aria-label={`${d.estrelas} de 5 estrelas`}>
+              {[1, 2, 3, 4, 5].map((i) => <Icone key={i} nome="estrela" tamanho={18} className={i > d.estrelas ? 'apagada' : ''} style={{ fill: i <= d.estrelas ? 'currentColor' : 'none' }} />)}
+            </span>
+            <blockquote>{d.texto}</blockquote>
+            <figcaption className="depo-autor">
+              {d.foto ? <img className="foto" src={d.foto} alt="" loading="lazy" /> : <span className="foto" aria-hidden="true">{d.nome.charAt(0)}</span>}
+              <div><p className="forte">{d.nome}</p>{d.contexto && <p>{d.contexto}</p>}</div>
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    </section>
   );
 }
 

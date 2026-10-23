@@ -17,31 +17,47 @@ import Vendas from './admin/Vendas.jsx';
 import Agenda from './admin/Agenda.jsx';
 import Relatorios from './admin/Relatorios.jsx';
 import Lembretes from './admin/Lembretes.jsx';
+import Compras from './admin/Compras.jsx';
+import ContasFixas from './admin/ContasFixas.jsx';
+import Depoimentos from './admin/Depoimentos.jsx';
+import Certificado from './site/Certificado.jsx';
+import { TrocarSenha } from './admin/Configuracoes.jsx';
+import { Topo } from './admin/Layout.jsx';
 
 function Protegido({ children }) {
   return sessao.token() ? children : <Navigate to="/admin/entrar" replace />;
+}
+
+/** Telas só da administradora: a ajudante volta para o painel. */
+function SoAdmin({ children }) {
+  return sessao.ajudante() ? <Navigate to="/admin" replace /> : children;
 }
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Site />} />
+      <Route path="/certificado/:codigo" element={<Certificado />} />
       <Route path="/admin/entrar" element={<Entrar />} />
       <Route path="/admin" element={<Protegido><Layout /></Protegido>}>
         <Route index element={<Painel />} />
-        <Route path="orcamentos" element={<Orcamentos />} />
+        <Route path="orcamentos" element={<SoAdmin><Orcamentos /></SoAdmin>} />
         <Route path="encomendas" element={<Encomendas />} />
         <Route path="produtos" element={<Produtos />} />
         <Route path="vendas" element={<Vendas />} />
         <Route path="agenda" element={<Agenda />} />
-        <Route path="relatorios" element={<Relatorios />} />
-        <Route path="lembretes" element={<Lembretes />} />
-        <Route path="clientes" element={<Clientes />} />
+        <Route path="relatorios" element={<SoAdmin><Relatorios /></SoAdmin>} />
+        <Route path="lembretes" element={<SoAdmin><Lembretes /></SoAdmin>} />
+        <Route path="clientes" element={<SoAdmin><Clientes /></SoAdmin>} />
         <Route path="oficinas" element={<Oficinas />} />
-        <Route path="financeiro" element={<Financeiro />} />
+        <Route path="financeiro" element={<SoAdmin><Financeiro /></SoAdmin>} />
+        <Route path="financeiro/contas" element={<SoAdmin><ContasFixas /></SoAdmin>} />
+        <Route path="materiais/compras" element={<SoAdmin><Compras /></SoAdmin>} />
         <Route path="materiais" element={<Materiais />} />
-        <Route path="portfolio" element={<Portfolio />} />
-        <Route path="configuracoes" element={<Configuracoes />} />
+        <Route path="portfolio" element={<SoAdmin><Portfolio /></SoAdmin>} />
+        <Route path="portfolio/depoimentos" element={<SoAdmin><Depoimentos /></SoAdmin>} />
+        <Route path="configuracoes" element={<SoAdmin><Configuracoes /></SoAdmin>} />
+        <Route path="senha" element={<><Topo titulo="Minha senha" /><TrocarSenha /></>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

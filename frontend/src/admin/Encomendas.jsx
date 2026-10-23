@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api } from '../api.js';
+import { api, sessao } from '../api.js';
 import { FormCompromisso } from './Agenda.jsx';
 import Icone from '../componentes/Icone.jsx';
 import { Campo, Confirmar, Estado, Modal, ModalForm, Selo, lerForm, useCarregar, useToast, Vazio } from '../componentes/ui.jsx';
@@ -11,6 +11,8 @@ import { Info } from './Orcamentos.jsx';
 
 const FILTROS = [['', 'Todas'], ['AGUARDANDO_SINAL', 'Aguardando sinal'], ['EM_PRODUCAO', 'Em produção'], ['PRONTA', 'Prontas'], ['ENTREGUE', 'Entregues'], ['CANCELADA', 'Canceladas']];
 const PROXIMO = { AGUARDANDO_SINAL: 'EM_PRODUCAO', EM_PRODUCAO: 'PRONTA', PRONTA: 'ENTREGUE' };
+/** A ajudante só avança a produção: pronta e entregue. */
+const PROXIMO_AJUDANTE = { EM_PRODUCAO: 'PRONTA', PRONTA: 'ENTREGUE' };
 
 export default function Encomendas() {
   const [params, setParams] = useSearchParams();
@@ -18,13 +20,14 @@ export default function Encomendas() {
   const [aberta, setAberta] = useState(params.get('abrir') ? { id: Number(params.get('abrir')) } : null);
   const [form, setForm] = useState(null);
   const toast = useToast();
+  const ajudante = sessao.ajudante();
   const { dados, erro, carregando, recarregar } = useCarregar(
     () => api.get(`/api/encomendas${filtro ? `?status=${filtro}` : ''}`), [filtro]);
 
   return (
     <>
       <Topo titulo="Encomendas">
-        <button type="button" className="btn btn-terra" onClick={() => setForm({})}><Icone nome="mais" tamanho={18} largura={3} />Nova encomenda</button>
+        {!ajudante && <button type="button" className="btn btn-terra" onClick={() => setForm({})}><Icone nome="mais" tamanho={18} largura={3} />Nova encomenda</button>}
       </Topo>
       <div className="chips" role="group" aria-label="Filtrar por status" style={{ alignSelf: 'flex-start' }}>
         {FILTROS.map(([v, r]) => <button key={v} type="button" className="chip" aria-pressed={filtro === v} onClick={() => setFiltro(v)}>{r}</button>)}
@@ -34,15 +37,17 @@ export default function Encomendas() {
           {dados?.length === 0 ? <Vazio>Nenhuma encomenda {filtro ? 'neste status' : 'ainda'}. Aprove um orçamento ou crie uma nova.</Vazio> : (
             <div className="tabela-caixa">
               <table className="tabela">
-                <thead><tr><th>Encomenda</th><th>Cliente</th><th>Entrega</th><th className="num">Total</th><th className="num">Falta receber</th><th>Status</th></tr></thead>
+                <thead><tr><th>Encomenda</th><th>Cliente</th><th>Entrega</th>{!ajudante && <><th className="num">Total</th><th className="num">Falta receber</th></>}<th>Status</th></tr></thead>
                 <tbody>
                   {dados?.map((e) => (
                     <tr key={e.id} className="clicavel" tabIndex={0} onClick={() => setAberta(e)} onKeyDown={(k) => k.key === 'Enter' && setAberta(e)}>
                       <td><strong>{e.descricao}</strong><br /><span className="mudo" style={{ fontSize: 14 }}>{FRENTES[e.frente]}{e.produtoNome ? ` · ${e.quantidade}× ${e.produtoNome}` : ''}</span></td>
                       <td>{e.clienteNome}</td>
                       <td>{data(e.prazoEntrega)}</td>
-                      <td className="num">{moeda(e.valorTotal)}</td>
-                      <td className="num" style={{ fontWeight: 800, color: Number(e.saldo) > 0 ? 'var(--terra-texto)' : 'var(--oliva-texto)' }}>{Number(e.saldo) > 0 ? moeda(e.saldo) : 'Quitada'}</td>
+                      {!ajudante && <>
+                        <td className="num">{moeda(e.valorTotal)}</td>
+                        <td className="num" style={{ fontWeight: 800, color: Number(e.saldo) > 0 ? 'var(--terra-texto)' : 'var(--oliva-texto)' }}>{Number(e.saldo) > 0 ? moeda(e.saldo) : 'Quitada'}</td>
+                      </>}
                       <td><Selo mapa={STATUS_ENCOMENDA} valor={e.status} /></td>
                     </tr>
                   ))}
@@ -94,8 +99,9 @@ function FormEncomenda({ encomenda: e, aoFechar, aoSalvar }) {
 }
 
 function Detalhe({ id, aoFechar, aoEditar }) {
+  const ajudante = sessao.ajudante();
   const { dados: e, erro, carregando, recarregar } = useCarregar(() => api.get(`/api/encomendas/${id}`));
-  const { dados: pagamentos, recarregar: recarregarPag } = useCarregar(() => api.get(`/api/encomendas/${id}/pagamentos`));
+  const { dados: pagamentos, recarregar: recarregarPag } = useCarregar(() => (ajudante ? Promise.resolve([]) : api.get(`/api/encomendas/${id}/pagamentos`)));
   const [pagar, setPagar] = useState(false);
   const [confirmar, setConfirmar] = useState(null);
   const [falha, setFalha] = useState(null);
@@ -152,14 +158,16 @@ function Detalhe({ id, aoFechar, aoEditar }) {
       }} />;
   }
 
-  const proximo = e && PROXIMO[e.status];
+  const proximo = e && (ajudante ? PROXIMO_AJUDANTE : PROXIMO)[e.status];
   return (
     <Modal titulo={e ? e.descricao : 'Encomenda'} aoFechar={aoFechar} largo rodape={e && <>
-      {e.status !== 'CANCELADA' && e.status !== 'ENTREGUE' && <button type="button" className="btn btn-perigo" onClick={() => setConfirmar(Number(e.valorPago) > 0 ? 'CANCELAR' : 'EXCLUIR')}>{Number(e.valorPago) > 0 ? 'Cancelar' : 'Excluir'}</button>}
-      <button type="button" className="btn btn-claro" onClick={() => aoEditar(e)}><Icone nome="editar" tamanho={18} />Editar</button>
-      <button type="button" className="btn btn-claro" onClick={contrato} disabled={gerando}><Icone nome="pdf" tamanho={18} />{gerando ? 'Gerando…' : 'Contrato'}</button>
+      {!ajudante && <>
+        {e.status !== 'CANCELADA' && e.status !== 'ENTREGUE' && <button type="button" className="btn btn-perigo" onClick={() => setConfirmar(Number(e.valorPago) > 0 ? 'CANCELAR' : 'EXCLUIR')}>{Number(e.valorPago) > 0 ? 'Cancelar' : 'Excluir'}</button>}
+        <button type="button" className="btn btn-claro" onClick={() => aoEditar(e)}><Icone nome="editar" tamanho={18} />Editar</button>
+        <button type="button" className="btn btn-claro" onClick={contrato} disabled={gerando}><Icone nome="pdf" tamanho={18} />{gerando ? 'Gerando…' : 'Contrato'}</button>
+      </>}
       {e.status !== 'CANCELADA' && e.status !== 'ENTREGUE' && <button type="button" className="btn btn-claro" onClick={() => setAgendar(true)}><Icone nome="calendario" tamanho={18} />Agendar</button>}
-      {Number(e.saldo) > 0 && <button type="button" className="btn btn-claro" onClick={() => setPagar(true)}><Icone nome="dinheiro" tamanho={18} />Registrar pagamento</button>}
+      {!ajudante && Number(e.saldo) > 0 && <button type="button" className="btn btn-claro" onClick={() => setPagar(true)}><Icone nome="dinheiro" tamanho={18} />Registrar pagamento</button>}
       {proximo && <button type="button" className="btn btn-terra" onClick={() => mudar(proximo)}>Marcar como {STATUS_ENCOMENDA[proximo][0].toLowerCase()}</button>}
     </>}>
       <Estado carregando={carregando} erro={erro}>
@@ -169,31 +177,34 @@ function Detalhe({ id, aoFechar, aoEditar }) {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', marginBottom: 18 }}>
               <Selo mapa={STATUS_ENCOMENDA} valor={e.status} /><span className="selo selo-areia">{FRENTES[e.frente]}</span>
             </div>
-            <div className="grade-resumo" style={{ marginBottom: 20 }}>
+            {!ajudante && <div className="grade-resumo" style={{ marginBottom: 20 }}>
               {[['Total', e.valorTotal, 'var(--areia)'], ['Recebido', e.valorPago, 'var(--oliva-claro)'], ['Falta receber', e.saldo, 'var(--terra-claro)']].map(([r, v, f]) => (
                 <div key={r} className="clay-sm" style={{ background: f, borderRadius: 22, padding: 16 }}>
                   <p className="forte" style={{ fontSize: 14 }}>{r}</p><p style={{ fontSize: 24, fontWeight: 900 }}>{moeda(v)}</p>
                 </div>
               ))}
-            </div>
+            </div>}
             <div className="form-grade">
               <Info rotulo="Cliente" valor={e.clienteNome} />
               <Info rotulo="WhatsApp" valor={e.clienteWhatsapp ? <a href={linkWhats(e.clienteWhatsapp, `Olá, ${e.clienteNome.split(' ')[0]}! Aqui é a Lenne, do ateliê.`)} target="_blank" rel="noopener noreferrer">{telefone(e.clienteWhatsapp)}</a> : '—'} />
               <Info rotulo="Prazo de entrega" valor={data(e.prazoEntrega)} />
-              <Info rotulo="Sinal combinado" valor={moeda(e.valorSinal)} />
+              {!ajudante && <Info rotulo="Sinal combinado" valor={moeda(e.valorSinal)} />}
+              {e.produtoNome && <Info rotulo="Peça da ficha" valor={`${e.quantidade}× ${e.produtoNome}`} />}
               {e.observacoes && <div className="inteiro"><Info rotulo="Observações" valor={e.observacoes} /></div>}
             </div>
-            <Custos e={e} />
+            {!ajudante && <Custos e={e} />}
             <MateriaisUsados e={e} aoMudar={() => { recarregar(); }} />
             <FotosEncomenda e={e} />
-            <h3 style={{ fontSize: 18, margin: '24px 0 8px' }}>Pagamentos</h3>
-            {!pagamentos?.length ? <p className="mudo forte">Nenhum pagamento registrado.</p> : (
-              <ul className="lista-linhas">
-                {pagamentos.map((p) => (
-                  <li key={p.id}><div className="info"><p>{moeda(p.valor)} · {FORMAS[p.formaPagamento]}</p><p>{data(p.data)} · {p.descricao}</p></div></li>
-                ))}
-              </ul>
-            )}
+            {!ajudante && <>
+              <h3 style={{ fontSize: 18, margin: '24px 0 8px' }}>Pagamentos</h3>
+              {!pagamentos?.length ? <p className="mudo forte">Nenhum pagamento registrado.</p> : (
+                <ul className="lista-linhas">
+                  {pagamentos.map((p) => (
+                    <li key={p.id}><div className="info"><p>{moeda(p.valor)} · {FORMAS[p.formaPagamento]}</p><p>{data(p.data)} · {p.descricao}</p></div></li>
+                  ))}
+                </ul>
+              )}
+            </>}
           </>
         )}
       </Estado>
@@ -294,9 +305,9 @@ function MateriaisUsados({ e, aoMudar }) {
             <li key={c.id}>
               <div className="info">
                 <p>{c.materialNome}: {qtdUn(c.quantidade, c.unidade)}</p>
-                <p>{moedaUnit(c.custoUnitario)}/{c.unidade} · {c.origem === 'FICHA_ENCOMENDA' ? 'pela ficha' : 'extra'} · {data(c.data)}</p>
+                <p>{c.custoUnitario != null ? `${moedaUnit(c.custoUnitario)}/${c.unidade} · ` : ''}{c.origem === 'FICHA_ENCOMENDA' ? 'pela ficha' : 'extra'} · {data(c.data)}</p>
               </div>
-              <strong className="num">{moeda(c.custoTotal)}</strong>
+              {c.custoTotal != null && <strong className="num">{moeda(c.custoTotal)}</strong>}
               {!cancelada && (
                 <button type="button" className="btn btn-fantasma btn-icone btn-p" aria-label={`Devolver ${c.materialNome} ao estoque`}
                   onClick={() => acao(() => api.del(`/api/consumos/${c.id}`), 'Material devolvido ao estoque.')}><Icone nome="fechar" tamanho={16} /></button>
@@ -380,8 +391,9 @@ function FotosEncomenda({ e }) {
       )}
       {aberta && (
         <Modal titulo={ROTULO_FOTO[aberta.tipo]} aoFechar={() => setAberta(null)} largo rodape={<>
-          <button type="button" className="btn btn-perigo" onClick={() => acao(() => api.del(`/api/fotos/${aberta.id}`), 'Foto excluída.')}><Icone nome="lixo" tamanho={18} />Excluir</button>
-          {aberta.tipo === 'PRONTA' && !aberta.portfolioItemId && (
+          {!sessao.ajudante() && <button type="button" className="btn btn-perigo" onClick={() => acao(() => api.del(`/api/fotos/${aberta.id}`), 'Foto excluída.')}><Icone nome="lixo" tamanho={18} />Excluir</button>}
+          {sessao.ajudante() && <button type="button" className="btn btn-terra" onClick={() => setAberta(null)}>Fechar</button>}
+          {!sessao.ajudante() && aberta.tipo === 'PRONTA' && !aberta.portfolioItemId && (
             <button type="button" className="btn btn-terra" onClick={() => acao(() => api.post(`/api/fotos/${aberta.id}/publicar`, {}), 'Foto publicada no portfólio do site.')}>
               <Icone nome="site" tamanho={18} />Publicar no portfólio
             </button>

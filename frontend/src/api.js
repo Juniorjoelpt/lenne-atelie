@@ -1,17 +1,27 @@
 // Acesso à API do Spring Boot. O token de login fica no navegador da Lenne.
 const CHAVE_TOKEN = 'atelie.token';
 const CHAVE_NOME = 'atelie.nome';
+const CHAVE_PERFIL = 'atelie.perfil';
 
 export const sessao = {
   token: () => localStorage.getItem(CHAVE_TOKEN),
   nome: () => localStorage.getItem(CHAVE_NOME) || '',
-  entrar(token, nome) {
+  perfil: () => localStorage.getItem(CHAVE_PERFIL) || 'ADMIN',
+  /** Ajudante: vê a produção, sem valores, financeiro nem configurações. */
+  ajudante: () => localStorage.getItem(CHAVE_PERFIL) === 'AJUDANTE',
+  entrar(token, nome, perfil) {
     localStorage.setItem(CHAVE_TOKEN, token);
     localStorage.setItem(CHAVE_NOME, nome);
+    localStorage.setItem(CHAVE_PERFIL, perfil || 'ADMIN');
+  },
+  atualizar(nome, perfil) {
+    localStorage.setItem(CHAVE_NOME, nome);
+    localStorage.setItem(CHAVE_PERFIL, perfil || 'ADMIN');
   },
   sair() {
     localStorage.removeItem(CHAVE_TOKEN);
     localStorage.removeItem(CHAVE_NOME);
+    localStorage.removeItem(CHAVE_PERFIL);
   },
 };
 

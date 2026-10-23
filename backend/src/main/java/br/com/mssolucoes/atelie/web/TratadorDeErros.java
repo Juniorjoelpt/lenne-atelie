@@ -52,6 +52,11 @@ public class TratadorDeErros {
         return erro(HttpStatus.BAD_REQUEST, "Parâmetro ausente ou inválido. Verifique datas e opções.");
     }
 
+    @ExceptionHandler(AcessoNegadoException.class)
+    public ResponseEntity<Map<String, Object>> acessoNegado(AcessoNegadoException e) {
+        return erro(HttpStatus.FORBIDDEN, e.getMessage());
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, Object>> credenciais(BadCredentialsException e) {
         return erro(HttpStatus.UNAUTHORIZED, "E-mail ou senha incorretos.");
@@ -59,7 +64,17 @@ public class TratadorDeErros {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> negado(AccessDeniedException e) {
-        return erro(HttpStatus.FORBIDDEN, "Acesso negado.");
+        return erro(HttpStatus.FORBIDDEN, "Seu acesso não permite esta ação. Fale com a administradora do ateliê.");
+    }
+
+    @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<Map<String, Object>> formato(Exception e) {
+        return erro(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Formato de envio não aceito.");
+    }
+
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<Map<String, Object>> metodo(Exception e) {
+        return erro(HttpStatus.METHOD_NOT_ALLOWED, "Operação não disponível.");
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)

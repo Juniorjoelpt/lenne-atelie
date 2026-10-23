@@ -35,8 +35,8 @@ public class FiltroJwt extends OncePerRequestFilter {
                     .filter(u -> u.isAtivo())
                     .ifPresent(u -> {
                         var auth = new UsernamePasswordAuthenticationToken(
-                                new UsuarioLogado(u.getId(), u.getNome(), u.getEmail()), null,
-                                List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+                                new UsuarioLogado(u.getId(), u.getNome(), u.getEmail(), u.getPerfil()), null,
+                                List.of(new SimpleGrantedAuthority("ROLE_" + u.getPerfil().name())));
                         SecurityContextHolder.getContext().setAuthentication(auth);
                     });
         }

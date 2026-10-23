@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { api } from '../api.js';
+import { api, sessao } from '../api.js';
 import Icone from '../componentes/Icone.jsx';
 import { Confirmar, Estado, Modal, useCarregar, useToast, Vazio } from '../componentes/ui.jsx';
 import { CANAIS, CORES_GRAFICO, FORMAS, data, hojeIso, moeda } from '../util.js';
@@ -9,6 +9,36 @@ import { Topo } from './Layout.jsx';
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
 export default function Vendas() {
+  return sessao.ajudante() ? <CaixaAjudante /> : <VendasAdmin />;
+}
+
+/** A ajudante usa só o caixa (sem o resumo do mês nem o cancelamento). */
+function CaixaAjudante() {
+  const [pdv, setPdv] = useState(true);
+  const [ultimas, setUltimas] = useState([]);
+  const toast = useToast();
+  return (
+    <>
+      <Topo titulo="Vendas">
+        <button type="button" className="btn btn-terra" onClick={() => setPdv(true)}><Icone nome="sacola" tamanho={18} />Nova venda</button>
+      </Topo>
+      <section className="cartao" aria-labelledby="t-hoje">
+        <div className="cartao-titulo"><h2 id="t-hoje">Vendas que você registrou agora</h2></div>
+        {ultimas.length === 0 ? <Vazio>Toque em "Nova venda" para abrir o caixa. Errou alguma venda? Avise a Lenne para cancelar.</Vazio> : (
+          <ul className="lista-linhas">
+            {ultimas.map((v) => (
+              <li key={v.id}><div className="info"><p>{v.itens.map((i) => `${i.quantidade}× ${i.descricao}`).join(', ')}</p><p>{CANAIS[v.canal]} · {FORMAS[v.formaPagamento]}</p></div>
+                <strong className="num">{moeda(v.total)}</strong></li>
+            ))}
+          </ul>
+        )}
+      </section>
+      {pdv && <Pdv aoFechar={() => setPdv(false)} aoVender={(v) => { toast(`Venda de ${moeda(v.total)} registrada.`); setPdv(false); setUltimas((l) => [v, ...l]); }} />}
+    </>
+  );
+}
+
+function VendasAdmin() {
   const [params, setParams] = useSearchParams();
   const hoje = new Date();
   const [ref, setRef] = useState({ ano: hoje.getFullYear(), mes: hoje.getMonth() + 1 });

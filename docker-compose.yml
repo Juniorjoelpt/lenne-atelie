@@ -34,6 +34,7 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:?defina ADMIN_EMAIL no .env}
       ADMIN_SENHA: ${ADMIN_SENHA:?defina ADMIN_SENHA no .env}
       CORS_ORIGENS: ${CORS_ORIGENS:-}
+      URL_PUBLICA: ${URL_PUBLICA:-}
       TZ: America/Fortaleza
     volumes:
       - uploads:/data/uploads

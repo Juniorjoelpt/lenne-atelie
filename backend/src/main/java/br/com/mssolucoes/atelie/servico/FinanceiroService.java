@@ -87,6 +87,12 @@ public class FinanceiroService {
         if (l.getVenda() != null) {
             throw new RegraNegocioException("Este lançamento vem de uma venda. Cancele a venda em Vendas.");
         }
+        if (l.getCompra() != null) {
+            throw new RegraNegocioException("Este lançamento vem de uma compra. Cancele a compra em Compras.");
+        }
+        if (l.getContaFixa() != null) {
+            throw new RegraNegocioException("Este lançamento é o pagamento de uma conta fixa. Desfaça em Contas fixas.");
+        }
     }
 
     private Lancamento buscar(Long id) {
@@ -127,6 +133,7 @@ public class FinanceiroService {
             case OFICINA -> "Oficinas";
             case VENDA -> "Pronta-entrega";
             case MATERIAL -> "Materiais";
+            case CONTAS_FIXAS -> "Contas fixas";
             case OUTROS -> "Outros";
         };
     }
@@ -137,7 +144,9 @@ public class FinanceiroService {
                 l.getEncomenda() == null ? null : l.getEncomenda().getId(),
                 l.getInscricao() == null ? null : l.getInscricao().getId(),
                 l.getVenda() == null ? null : l.getVenda().getId(),
-                l.getInscricao() != null || l.getVenda() != null);
+                l.getCompra() == null ? null : l.getCompra().getId(),
+                l.getContaFixa() == null ? null : l.getContaFixa().getId(),
+                l.getInscricao() != null || l.getVenda() != null || l.getCompra() != null || l.getContaFixa() != null);
     }
 
     static LocalDate hoje() {

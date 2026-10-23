@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api.js';
-import { Campo, Estado, lerForm, useCarregar, useToast } from '../componentes/ui.jsx';
-import { moeda, telefone } from '../util.js';
+import Icone from '../componentes/Icone.jsx';
+import { Campo, Confirmar, Estado, ModalForm, lerForm, useCarregar, useToast, Vazio } from '../componentes/ui.jsx';
+import { data, moeda, telefone } from '../util.js';
 import { Topo } from './Layout.jsx';
 
 export default function Configuracoes() {
@@ -14,6 +16,7 @@ export default function Configuracoes() {
         {c && <DadosAtelie c={c} />}
       </Estado>
       <Documentos />
+      <Equipe />
       <TrocarSenha />
     </>
   );
@@ -58,7 +61,7 @@ function DadosAtelie({ c }) {
   );
 }
 
-function TrocarSenha() {
+export function TrocarSenha() {
   const [erro, setErro] = useState(null);
   const toast = useToast();
 
@@ -91,6 +94,66 @@ function TrocarSenha() {
   );
 }
 
+const PERFIS = [['AJUDANTE', 'Ajudante (produção, sem valores)'], ['ADMIN', 'Administradora (acesso completo)']];
+
+/** Acessos ao sistema: a ajudante vê encomendas, materiais, agenda, oficinas e o caixa, sem valores nem financeiro. */
+function Equipe() {
+  const lista = useCarregar(() => api.get('/api/equipe'));
+  const [form, setForm] = useState(null);
+  const [excluir, setExcluir] = useState(null);
+  const toast = useToast();
+  return (
+    <section className="cartao" aria-labelledby="t-equipe">
+      <div className="cartao-titulo">
+        <h2 id="t-equipe">Equipe</h2>
+        <button type="button" className="btn btn-claro btn-p" onClick={() => setForm({ perfil: 'AJUDANTE' })}><Icone nome="mais" tamanho={16} largura={3} />Novo acesso</button>
+      </div>
+      <p className="mudo forte" style={{ marginBottom: 12, fontSize: 15 }}>
+        A ajudante acompanha e produz as encomendas, registra o material usado, vê a agenda e as oficinas e vende no caixa.
+        Ela não vê valores cobrados, custos, financeiro, relatórios nem configurações.
+      </p>
+      <Estado carregando={lista.carregando} erro={lista.erro}>
+        {lista.dados?.length === 0 ? <Vazio>Nenhum acesso.</Vazio> : (
+          <ul className="lista-linhas">
+            {lista.dados?.map((u) => (
+              <li key={u.id} style={{ opacity: u.ativo ? 1 : 0.55 }}>
+                <div className="avatar" aria-hidden="true" style={{ width: 44, height: 44, fontSize: 18 }}>{u.nome.charAt(0)}</div>
+                <div className="info"><p>{u.nome}{u.euMesma ? ' (você)' : ''}</p><p>{u.email} · desde {data(u.criadoEm)}</p></div>
+                <span className={`selo ${u.perfil === 'ADMIN' ? 'selo-terra' : 'selo-oliva'}`}>{u.perfil === 'ADMIN' ? 'Administradora' : 'Ajudante'}</span>
+                {!u.ativo && <span className="selo selo-areia">desativado</span>}
+                <button type="button" className="btn btn-fantasma btn-icone btn-p" aria-label={`Editar ${u.nome}`} onClick={() => setForm(u)}><Icone nome="editar" tamanho={18} /></button>
+                {!u.euMesma && <button type="button" className="btn btn-fantasma btn-icone btn-p" aria-label={`Excluir ${u.nome}`} onClick={() => setExcluir(u)}><Icone nome="lixo" tamanho={18} /></button>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Estado>
+
+      {form && (
+        <ModalForm titulo={form.id ? `Editar acesso de ${form.nome}` : 'Novo acesso'} aoFechar={() => setForm(null)} aoSalvar={async (fd) => {
+          const d = lerForm(fd);
+          d.ativo = form.euMesma ? true : fd.get('ativo') === 'on';
+          if (form.euMesma) d.perfil = 'ADMIN';
+          if (form.id) await api.put(`/api/equipe/${form.id}`, d);
+          else await api.post('/api/equipe', d);
+          toast(form.id ? 'Acesso atualizado.' : 'Acesso criado. Passe o e-mail e a senha para ela entrar em /admin.');
+          setForm(null);
+          lista.recarregar();
+        }}>
+          <Campo rotulo="Nome" nome="nome" defaultValue={form.nome} required maxLength={120} />
+          <Campo rotulo="E-mail (para entrar)" nome="email" tipo="email" defaultValue={form.email} required maxLength={160} autoComplete="off" />
+          {!form.euMesma && <Campo rotulo="Perfil" nome="perfil" opcoes={PERFIS} defaultValue={form.perfil || 'AJUDANTE'} inteiro />}
+          <Campo rotulo={form.id ? 'Nova senha (opcional)' : 'Senha provisória'} nome="senha" tipo="password" minLength={8} required={!form.id}
+            autoComplete="new-password" dica={form.id ? 'Em branco, mantém a senha atual.' : 'Mínimo de 8 caracteres. Ela pode trocar depois.'} inteiro />
+          {form.id && !form.euMesma && <label className="checkbox inteiro"><input type="checkbox" name="ativo" defaultChecked={form.ativo} /> Acesso ativo (desmarque para bloquear na hora)</label>}
+        </ModalForm>
+      )}
+      {excluir && <Confirmar titulo="Excluir acesso" perigo textoBotao="Excluir" texto={`Excluir o acesso de ${excluir.nome}? Ela não consegue mais entrar.`}
+        aoFechar={() => setExcluir(null)} aoConfirmar={async () => { await api.del(`/api/equipe/${excluir.id}`); toast('Acesso excluído.'); setExcluir(null); lista.recarregar(); }} />}
+    </section>
+  );
+}
+
 function Precificacao() {
   const { dados: p, erro: erroCarga, carregando } = useCarregar(() => api.get('/api/configuracoes/precificacao'));
   return (
@@ -105,13 +168,15 @@ function FormPrecificacao({ p }) {
     salarioDesejado: String(p.salarioDesejado), horasMes: String(p.horasMes),
     custosFixosMensais: String(p.custosFixosMensais), margemPadrao: String(Number(p.margemPadrao)),
   });
+  const [automatico, setAutomatico] = useState(p.custosFixosAutomatico);
   const [erro, setErro] = useState(null);
   const [salvando, setSalvando] = useState(false);
   const toast = useToast();
   const n = (v) => Number(String(v).replace(',', '.')) || 0;
   const horas = Math.max(1, n(f.horasMes));
   const valorHora = n(f.salarioDesejado) / horas;
-  const fixoHora = n(f.custosFixosMensais) / horas;
+  const fixos = automatico ? Number(p.totalContasFixas) : n(f.custosFixosMensais);
+  const fixoHora = fixos / horas;
   const set = (k) => (e) => setF((x) => ({ ...x, [k]: e.target.value }));
 
   async function salvar(e) {
@@ -121,7 +186,7 @@ function FormPrecificacao({ p }) {
     try {
       await api.put('/api/configuracoes/precificacao', {
         salarioDesejado: n(f.salarioDesejado), horasMes: Math.round(n(f.horasMes)),
-        custosFixosMensais: n(f.custosFixosMensais), margemPadrao: n(f.margemPadrao),
+        custosFixosMensais: n(f.custosFixosMensais), margemPadrao: n(f.margemPadrao), custosFixosAutomatico: automatico,
       });
       toast('Precificação salva. As fichas já usam os novos valores.');
     } catch (err) {
@@ -132,7 +197,7 @@ function FormPrecificacao({ p }) {
   }
 
   return (
-    <form className="cartao" onSubmit={salvar} noValidate>
+    <form className="cartao" id="precificacao" onSubmit={salvar} noValidate>
       <div className="cartao-titulo"><h2>Precificação</h2><span className="selo selo-areia">só aparece aqui no sistema</span></div>
       <p className="mudo forte" style={{ marginBottom: 16, fontSize: 15 }}>
         Com esses valores o sistema calcula quanto vale sua hora e reparte os custos fixos em cada peça.
@@ -151,8 +216,14 @@ function FormPrecificacao({ p }) {
         </div>
         <div className="campo">
           <label htmlFor="pr-fixos">Custos fixos do mês (R$)</label>
-          <input id="pr-fixos" className="entrada" type="number" min="0" step="10" value={f.custosFixosMensais} onChange={set('custosFixosMensais')} />
-          <span className="dica">Aluguel, energia, internet, MEI, aplicativos…</span>
+          <input id="pr-fixos" className="entrada" type="number" min="0" step="10" value={automatico ? String(p.totalContasFixas) : f.custosFixosMensais}
+            onChange={set('custosFixosMensais')} disabled={automatico} />
+          <label className="checkbox" style={{ marginTop: 6 }}>
+            <input type="checkbox" checked={automatico} onChange={(e) => setAutomatico(e.target.checked)} /> Usar as contas fixas ({moeda(p.totalContasFixas)})
+          </label>
+          <span className="dica">{automatico
+            ? <>Acompanha sozinho as <Link to="/admin/financeiro/contas">contas fixas</Link> marcadas para a precificação.</>
+            : 'Aluguel, energia, internet, MEI, aplicativos…'}</span>
         </div>
         <div className="campo">
           <label htmlFor="pr-margem">Margem de lucro padrão (%)</label>

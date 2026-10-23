@@ -3,7 +3,9 @@ import { api } from '../api.js';
 import Icone from '../componentes/Icone.jsx';
 import { Campo, Confirmar, Estado, ModalForm, lerForm, useCarregar, useToast, Vazio } from '../componentes/ui.jsx';
 import { CATEGORIAS_PORTFOLIO } from '../util.js';
-import { Topo } from './Layout.jsx';
+import { Abas, Topo } from './Layout.jsx';
+
+export const ABAS_SITE = [['/admin/portfolio', 'Fotos', 'portfolio'], ['/admin/portfolio/depoimentos', 'Depoimentos', 'aspas']];
 
 export default function Portfolio() {
   const [form, setForm] = useState(null);
@@ -24,6 +26,7 @@ export default function Portfolio() {
       <Topo titulo="Portfólio">
         <button type="button" className="btn btn-terra" onClick={() => setForm({})}><Icone nome="foto" tamanho={18} />Enviar foto</button>
       </Topo>
+      <Abas itens={ABAS_SITE} />
       <p className="mudo forte" style={{ marginTop: -10 }}>As fotos publicadas aparecem no site, na ordem definida (menor número primeiro). As três primeiras também vão para o topo da página.</p>
       <section className="cartao">
         <Estado carregando={carregando} erro={erro}>
