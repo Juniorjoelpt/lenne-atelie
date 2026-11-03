@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { sessao } from './api.js';
 import Site from './site/Site.jsx';
 import Layout from './admin/Layout.jsx';
@@ -37,8 +38,19 @@ function SoAdmin({ children }) {
   return sessao.ajudante() ? <Navigate to="/admin" replace /> : children;
 }
 
+/** Cada página nova abre no topo (links com #âncora continuam indo direto à seção). */
+function VoltarAoTopo() {
+  const { pathname, hash } = useLocation();
+  useEffect(() => {
+    if (!hash) window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+}
+
 export default function App() {
   return (
+    <>
+    <VoltarAoTopo />
     <Routes>
       <Route path="/" element={<Site />} />
       <Route path="/certificado/:codigo" element={<Certificado />} />
@@ -69,5 +81,6 @@ export default function App() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 }
