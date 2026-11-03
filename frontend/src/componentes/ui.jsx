@@ -45,7 +45,12 @@ export function useCarregar(fn, deps = []) {
 
 export function Estado({ carregando, erro, children }) {
   if (erro) return <div className="aviso aviso-erro" role="alert">{erro}</div>;
-  if (carregando) return <div className="carregando">Carregando…</div>;
+  if (carregando) return (
+    <div className="carregando" role="status" aria-live="polite">
+      <span className="sr">Carregando…</span>
+      <i /><i /><i />
+    </div>
+  );
   return children;
 }
 

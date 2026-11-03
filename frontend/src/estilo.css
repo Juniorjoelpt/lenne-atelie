@@ -163,7 +163,11 @@ select.entrada { padding-right: 36px; }
 .aviso-info { background: var(--ocre-claro); color: var(--ocre-texto); }
 
 .vazio { text-align: center; padding: 36px 16px; color: var(--marrom-3); font-weight: 700; }
-.carregando { padding: 40px; text-align: center; color: var(--marrom-3); font-weight: 700; }
+.carregando { display: flex; flex-direction: column; gap: 12px; padding: 8px 0; }
+.carregando i { display: block; height: 18px; border-radius: 10px; background: linear-gradient(90deg, var(--afundado) 0%, #F7F1E8 45%, var(--afundado) 90%); background-size: 220% 100%; animation: brilho 1.2s ease-in-out infinite; }
+.carregando i:nth-of-type(1) { width: 62%; }
+.carregando i:nth-of-type(2) { width: 88%; animation-delay: .1s; }
+.carregando i:nth-of-type(3) { width: 74%; animation-delay: .2s; }
 
 /* ---------- Toast ---------- */
 .toast {
@@ -579,3 +583,41 @@ select.entrada { padding-right: 36px; }
 }
 .contador-mini { position: absolute; top: -2px; right: -2px; min-width: 18px; height: 18px; border-radius: 999px; background: var(--oliva); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; padding: 0 4px; }
 .btn-icone { position: relative; }
+
+/* ---------- Movimento ---------- */
+/* Entrada das páginas: o conteúdo sobe e aparece em sequência, sem pressa */
+.pagina { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+.pagina > :not(.modal-fundo) { animation: entra .5s cubic-bezier(.22, 1, .36, 1) both; }
+.pagina > :nth-child(2):not(.modal-fundo) { animation-delay: .05s; }
+.pagina > :nth-child(3):not(.modal-fundo) { animation-delay: .1s; }
+.pagina > :nth-child(4):not(.modal-fundo) { animation-delay: .15s; }
+.pagina > :nth-child(5):not(.modal-fundo) { animation-delay: .2s; }
+.pagina > :nth-child(n+6):not(.modal-fundo) { animation-delay: .25s; }
+/* Cartões em grade entram um a um quando os dados chegam; linhas de tabela só aparecem suave */
+.grade-resumo > *, .grade-fichas > *, .fotos-grade > *, .depo-grade > *, .cursos-grade > * { animation: entra .45s cubic-bezier(.22, 1, .36, 1) both; }
+.grade-resumo > :nth-child(2), .grade-fichas > :nth-child(2), .fotos-grade > :nth-child(2), .depo-grade > :nth-child(2), .cursos-grade > :nth-child(2) { animation-delay: .04s; }
+.grade-resumo > :nth-child(3), .grade-fichas > :nth-child(3), .fotos-grade > :nth-child(3), .depo-grade > :nth-child(3), .cursos-grade > :nth-child(3) { animation-delay: .08s; }
+.grade-resumo > :nth-child(4), .grade-fichas > :nth-child(4), .fotos-grade > :nth-child(4), .depo-grade > :nth-child(4), .cursos-grade > :nth-child(4) { animation-delay: .12s; }
+.grade-resumo > :nth-child(n+5), .grade-fichas > :nth-child(n+5), .fotos-grade > :nth-child(n+5), .depo-grade > :nth-child(n+5), .cursos-grade > :nth-child(n+5) { animation-delay: .16s; }
+.pagina .tabela tbody tr { animation: some-aparece .35s ease-out both; }
+@keyframes entra { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes brilho { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
+/* Janelas: o fundo escurece suave e a caixa chega com um leve impulso */
+.modal-fundo { animation: some-aparece .2s ease-out both; }
+.modal { animation: janela .34s cubic-bezier(.2, .9, .3, 1.15) both; }
+@keyframes some-aparece { from { opacity: 0; } to { opacity: 1; } }
+@keyframes janela { from { opacity: 0; transform: translateY(18px) scale(.97); } to { opacity: 1; transform: none; } }
+
+/* Aviso rápido (toast) sobe de baixo */
+.toast { animation: toast .38s cubic-bezier(.2, .9, .3, 1.2) both; }
+@keyframes toast { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* Menu: destaque desliza em vez de piscar */
+.lateral nav a { transition: background-color .2s ease, box-shadow .2s ease, color .2s ease; }
+.fundo-menu { animation: some-aparece .2s ease-out both; }
+.aba { transition: background-color .2s ease, box-shadow .2s ease, color .2s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
+}

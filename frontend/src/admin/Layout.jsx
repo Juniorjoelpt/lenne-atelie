@@ -101,7 +101,10 @@ export default function Layout() {
         <button type="button" className="btn btn-claro menu-movel" style={{ alignSelf: 'flex-start' }} onClick={() => setAberto(true)} aria-label="Abrir menu">
           <Icone nome="menu" />Menu
         </button>
-        <Outlet />
+        {/* A chave reinicia a animação de entrada a cada página */}
+        <div key={local.pathname} className="pagina">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
