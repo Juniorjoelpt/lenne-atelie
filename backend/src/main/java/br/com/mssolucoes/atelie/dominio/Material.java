@@ -34,6 +34,17 @@ public class Material {
     @Column(name = "custo_unitario", nullable = false, precision = 12, scale = 4)
     private BigDecimal custoUnitario = BigDecimal.ZERO;
 
+    /** Quantos fios (pontas) cabem lado a lado em 1 cm. */
+    @Column(name = "fios_por_cm", precision = 6, scale = 2)
+    private BigDecimal fiosPorCm;
+
+    @Column(name = "gramas_por_metro", precision = 10, scale = 3)
+    private BigDecimal gramasPorMetro;
+
+    /** Para unidades que não são metro (rolo, novelo…): metros em 1 unidade. */
+    @Column(name = "metros_por_unidade", precision = 12, scale = 3)
+    private BigDecimal metrosPorUnidade;
+
     @Column(name = "criado_em", nullable = false)
     private LocalDateTime criadoEm = LocalDateTime.now();
 

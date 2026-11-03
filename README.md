@@ -78,7 +78,7 @@ O estoque de material pode ficar negativo; nesse caso aparece como "registre a c
   - "Paguei" lança a despesa em "Contas fixas", ligada ao mês; o mesmo mês não é pago duas vezes.
   - O painel avisa as contas vencidas e as que vencem em até 5 dias, e a agenda mostra os vencimentos.
   - Em Configurações › Precificação, "Usar as contas fixas" faz o custo fixo por hora acompanhar sozinho a soma das contas marcadas.
-- **Certificado das oficinas:** PDF em A4 deitado, com as fontes do site (Allura e Nunito, incluídas no projeto sob a licença OFL).
+- **Certificado das oficinas:** PDF em A4 deitado, com a logo e a fonte Montserrat do ateliê.
   - Sai por aluna ou da turma toda (uma página por aluna confirmada), com carga horária, local, conteúdo e código de verificação.
   - A carga horária pode ser informada na oficina; em branco, usa a duração entre início e término.
   - A aluna recebe um link (`/certificado/<código>`) que confirma o certificado e baixa o PDF depois que a oficina começa.
@@ -106,6 +106,16 @@ O estoque de material pode ficar negativo; nesse caso aparece como "registre a c
   - Tem texto para a cliente, até 8 fotos (a primeira é a capa), prazo de produção, ordem, e preço ou "sob consulta".
   - O preço é o que ela cobra: peça de pronta-entrega mostra o valor e as unidades disponíveis; peça sob encomenda mostra "a partir de".
   - O botão abre o WhatsApp já com o nome da peça. Custos e materiais nunca vão para o site.
+
+### Calculadora de fio
+
+- **Amostras de nó (Materiais › ícone do novelo):** a Lenne corta um fio de tamanho conhecido, faz o nó do jeito dela e anota quanto rendeu. Exemplo: 100 cm renderam 20 cm, fator 5×. Cada cordão guarda as suas amostras.
+- **Dados do cordão (opcionais, no cadastro do material):** fios lado a lado em 1 cm (define quantos cordões cortar pela largura), peso de 1 metro (mostra o total em gramas) e metros em 1 unidade (para fios contados em rolo ou novelo).
+- **Calculadora na ficha técnica ("Calcular quanto fio vai", embaixo de cada fio):**
+  - Informa a largura (ou a quantidade de cordões), se o cordão vai dobrado e os trechos de cima para baixo. Cada trecho usa uma amostra, "sem nó" (1×) ou a estimativa de 4× quando ainda não há amostra.
+  - Depois vêm a franja, a folga por cordão e a perda.
+  - O resultado é a lista de corte ("corte 40 cordões de 2,94 m"), o total em metros com a perda, o peso e o custo do fio. "Usar na ficha" preenche a quantidade na unidade do material.
+  - A conta fica em `frontend/src/calcFio.js`: ponta = Σ(trecho × fator) + franja; corte = ponta × 2 (se dobrado) + folga; cordões = largura × fios por cm ÷ 2 (se dobrado); total = cordões × corte × (1 + perda).
 
 ### Identidade visual
 

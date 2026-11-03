@@ -307,11 +307,12 @@ select.entrada { padding-right: 36px; }
 .ficha-campos { flex: 999 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 18px; }
 .receita { border: 0; margin: 0; padding: 16px; border-radius: 22px; background: var(--cru); box-shadow: var(--sombra-p); display: flex; flex-direction: column; gap: 10px; }
 .receita legend { font-weight: 900; padding: 0; float: left; width: 100%; margin-bottom: 4px; }
-.receita-linha { display: grid; grid-template-columns: minmax(0, 1fr) 130px auto 36px; gap: 8px; align-items: center; }
+.receita-linha { display: grid; grid-template-columns: minmax(0, 1fr) 160px 84px 36px; gap: 8px; align-items: center; }
+.receita-linha > .num { text-align: right; }
 .receita-qtd { display: flex; align-items: center; gap: 6px; }
 .receita-qtd .entrada { min-width: 0; padding: 0 10px; }
-.receita-qtd span { font-size: 13px; font-weight: 700; min-width: 0; }
-.receita-linha + .receita-linha { border-top: 1px dashed #E4D8C6; padding-top: 10px; }
+.receita-qtd span { font-size: 13px; font-weight: 700; min-width: 0; white-space: nowrap; }
+.receita-bloco + .receita-bloco { border-top: 1px dashed #E4D8C6; padding-top: 10px; }
 @media (max-width: 560px) {
   .receita-linha { grid-template-columns: minmax(0, 1fr) auto 36px; }
   .receita-linha > select { grid-column: 1 / -1; }
@@ -533,3 +534,46 @@ select.entrada { padding-right: 36px; }
 .fotos-produto { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
 .fotos-produto figure { margin: 0; background: var(--cru); border-radius: 16px; padding: 6px; box-shadow: var(--sombra-p); display: flex; flex-direction: column; gap: 6px; }
 .fotos-produto img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; }
+
+/* ---------- Calculadora de fio ---------- */
+.receita-bloco { display: flex; flex-direction: column; gap: 10px; }
+.calc-fio { background: #fff; border-radius: 20px; padding: 16px; box-shadow: var(--sombra-p); display: flex; flex-direction: column; gap: 14px; border: 2px solid var(--oliva-claro); }
+.calc-fio-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.calc-fio-topo p { display: flex; align-items: center; gap: 8px; color: var(--oliva-texto); }
+.calc-fio-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.calc-fio-3 { grid-template-columns: repeat(3, 1fr); }
+.calc-fio-grade .inteiro { grid-column: 1 / -1; }
+.rotulo-campo { font-weight: 800; font-size: 14px; }
+.calc-fio-trechos { border: 0; margin: 0; padding: 12px; border-radius: 16px; background: var(--cru); display: flex; flex-direction: column; gap: 8px; }
+.calc-fio-trechos legend { font-weight: 800; font-size: 14px; float: left; width: 100%; margin-bottom: 2px; padding: 0; }
+.trecho-linha { display: grid; grid-template-columns: minmax(0, 1fr) auto 110px 36px; gap: 8px; align-items: center; }
+.trecho-fator { width: 80px; padding: 0 10px; }
+.calc-fio-resultado { display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 16px; background: var(--oliva-claro); }
+.calc-fio-corte { font-size: 18px; }
+.calc-fio-numeros { display: flex; flex-wrap: wrap; gap: 8px; }
+.calc-fio-numeros div { background: #fff; border-radius: 14px; padding: 8px 12px; display: flex; flex-direction: column; min-width: 110px; }
+.calc-fio-numeros span { font-size: 12px; font-weight: 700; color: var(--marrom-3); }
+.calc-fio-numeros strong { font-size: 17px; }
+.calc-fio-numeros small { font-size: 11px; color: var(--marrom-3); }
+.aviso-fio { font-size: 13px; font-weight: 700; color: var(--marrom); background: var(--ocre-claro); border-radius: 12px; padding: 8px 12px; }
+.amostras { display: flex; flex-direction: column; gap: 10px; }
+.amostras-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.amostras-lista li { display: grid; grid-template-columns: 64px minmax(0, 1fr) 36px; gap: 10px; align-items: center; background: #fff; border-radius: 14px; padding: 8px 10px; }
+.amostras-lista .info { display: flex; flex-direction: column; font-size: 14px; }
+.amostras-lista .info .mudo { font-size: 13px; }
+.amostra-fator { font-weight: 900; font-size: 17px; color: var(--oliva-texto); text-align: center; }
+.amostra-form { display: grid; grid-template-columns: minmax(0, 1.6fr) 1fr 1fr auto; gap: 8px; align-items: end; }
+.amostra-previa { grid-column: 1 / -1; font-size: 13px; }
+.amostra-form-compacto { grid-template-columns: 1fr 1fr; }
+.amostra-form-compacto .campo:first-child, .amostra-form-compacto button { grid-column: 1 / -1; }
+.calc-fio-abrir { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 800; color: var(--oliva-texto); }
+@media (max-width: 640px) {
+  .calc-fio-grade, .calc-fio-3 { grid-template-columns: 1fr 1fr; }
+  .trecho-linha { grid-template-columns: minmax(0, 1fr) 36px; }
+  .trecho-linha > select, .trecho-linha > span { grid-column: 1 / -1; }
+  .trecho-linha > span:empty { display: none; }
+  .amostra-form { grid-template-columns: 1fr 1fr; }
+  .amostra-form .campo:first-child, .amostra-form button { grid-column: 1 / -1; }
+}
+.contador-mini { position: absolute; top: -2px; right: -2px; min-width: 18px; height: 18px; border-radius: 999px; background: var(--oliva); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; padding: 0 4px; }
+.btn-icone { position: relative; }

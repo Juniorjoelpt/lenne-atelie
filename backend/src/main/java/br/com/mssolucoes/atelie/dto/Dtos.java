@@ -249,11 +249,27 @@ public final class Dtos {
             @NotBlank(message = "Informe a unidade.") @Size(max = 20) String unidade,
             @NotNull(message = "Informe a quantidade em estoque.") BigDecimal quantidade,
             @NotNull @PositiveOrZero BigDecimal estoqueMinimo,
-            @NotNull @PositiveOrZero BigDecimal custoUnitario) {
+            @NotNull @PositiveOrZero BigDecimal custoUnitario,
+            /** Calculadora de fio (opcionais) */
+            @Positive(message = "Fios por cm precisa ser maior que zero.") BigDecimal fiosPorCm,
+            @Positive(message = "O peso por metro precisa ser maior que zero.") BigDecimal gramasPorMetro,
+            @Positive(message = "Os metros por unidade precisam ser maiores que zero.") BigDecimal metrosPorUnidade) {
     }
 
     public record MaterialResp(Long id, String nome, String unidade, BigDecimal quantidade, BigDecimal estoqueMinimo,
-                               BigDecimal custoUnitario, boolean abaixoDoMinimo) {
+                               BigDecimal custoUnitario, boolean abaixoDoMinimo,
+                               BigDecimal fiosPorCm, BigDecimal gramasPorMetro, BigDecimal metrosPorUnidade, int amostras) {
+    }
+
+    public record AmostraReq(
+            @NotBlank(message = "Informe o nó.") @Size(max = 80) String nomeNo,
+            @NotNull(message = "Informe quanto fio usou.") @Positive(message = "O fio usado precisa ser maior que zero.") BigDecimal fioCm,
+            @NotNull(message = "Informe quanto rendeu.") @Positive(message = "O quanto rendeu precisa ser maior que zero.") BigDecimal rendeuCm,
+            @Size(max = 200) String observacao) {
+    }
+
+    public record AmostraResp(Long id, Long materialId, String nomeNo, BigDecimal fioCm, BigDecimal rendeuCm,
+                              BigDecimal fator, String observacao, java.time.LocalDateTime criadoEm) {
     }
 
     public record AjusteEstoqueReq(

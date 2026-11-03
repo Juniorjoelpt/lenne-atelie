@@ -28,29 +28,72 @@ public class MaterialService {
     private final br.com.mssolucoes.atelie.repositorio.ConsumoMaterialRepository consumos;
     private final br.com.mssolucoes.atelie.repositorio.CompraItemRepository itensCompra;
     private final CompraService compras;
+    private final br.com.mssolucoes.atelie.repositorio.MaterialAmostraRepository amostras;
 
     public MaterialService(MaterialRepository repo, LancamentoRepository lancamentos,
                            br.com.mssolucoes.atelie.repositorio.ProdutoRepository produtos,
                            br.com.mssolucoes.atelie.repositorio.ConsumoMaterialRepository consumos,
                            br.com.mssolucoes.atelie.repositorio.CompraItemRepository itensCompra,
-                           CompraService compras) {
+                           CompraService compras,
+                           br.com.mssolucoes.atelie.repositorio.MaterialAmostraRepository amostras) {
         this.repo = repo;
         this.lancamentos = lancamentos;
         this.produtos = produtos;
         this.consumos = consumos;
         this.itensCompra = itensCompra;
         this.compras = compras;
+        this.amostras = amostras;
     }
 
     @Transactional(readOnly = true)
     public List<MaterialResp> listar() {
-        return repo.findAllByOrderByNomeAsc().stream().map(MaterialService::paraResp).toList();
+        java.util.Map<Long, Long> qtd = contarAmostras();
+        return repo.findAllByOrderByNomeAsc().stream().map(m -> paraResp(m, qtd.getOrDefault(m.getId(), 0L).intValue())).toList();
+    }
+
+    private java.util.Map<Long, Long> contarAmostras() {
+        java.util.Map<Long, Long> r = new java.util.HashMap<>();
+        for (Object[] l : amostras.contarPorMaterial()) r.put((Long) l[0], (Long) l[1]);
+        return r;
+    }
+
+    // ---------- Amostras de nó (calculadora de fio) ----------
+
+    @Transactional(readOnly = true)
+    public List<br.com.mssolucoes.atelie.dto.Dtos.AmostraResp> listarAmostras(Long materialId) {
+        buscar(materialId);
+        return amostras.findByMaterialIdOrderByNomeNoAscCriadoEmDesc(materialId).stream().map(MaterialService::paraResp).toList();
+    }
+
+    @Transactional
+    public br.com.mssolucoes.atelie.dto.Dtos.AmostraResp criarAmostra(Long materialId, br.com.mssolucoes.atelie.dto.Dtos.AmostraReq r) {
+        Material m = buscar(materialId);
+        if (r.rendeuCm().compareTo(r.fioCm()) > 0) {
+            throw new RegraNegocioException("O trabalho não pode render mais do que o fio usado. Confira as medidas.");
+        }
+        br.com.mssolucoes.atelie.dominio.MaterialAmostra a = new br.com.mssolucoes.atelie.dominio.MaterialAmostra();
+        a.setMaterial(m);
+        a.setNomeNo(r.nomeNo().trim());
+        a.setFioCm(r.fioCm());
+        a.setRendeuCm(r.rendeuCm());
+        a.setObservacao(r.observacao() == null || r.observacao().isBlank() ? null : r.observacao().trim());
+        return paraResp(amostras.save(a));
+    }
+
+    @Transactional
+    public void excluirAmostra(Long id) {
+        amostras.delete(amostras.findById(id).orElseThrow(() -> new NaoEncontradoException("Amostra")));
+    }
+
+    public static br.com.mssolucoes.atelie.dto.Dtos.AmostraResp paraResp(br.com.mssolucoes.atelie.dominio.MaterialAmostra a) {
+        return new br.com.mssolucoes.atelie.dto.Dtos.AmostraResp(a.getId(), a.getMaterial().getId(), a.getNomeNo(),
+                a.getFioCm(), a.getRendeuCm(), a.getFator(), a.getObservacao(), a.getCriadoEm());
     }
 
     @Transactional(readOnly = true)
     public List<MaterialResp> abaixoDoMinimo() {
         return repo.findAllByOrderByNomeAsc().stream().filter(Material::isAbaixoDoMinimo)
-                .map(MaterialService::paraResp).toList();
+                .map(m -> paraResp(m, 0)).toList();
     }
 
     @Transactional
@@ -128,10 +171,17 @@ public class MaterialService {
         m.setQuantidade(r.quantidade());
         m.setEstoqueMinimo(r.estoqueMinimo());
         m.setCustoUnitario(r.custoUnitario());
+        m.setFiosPorCm(r.fiosPorCm());
+        m.setGramasPorMetro(r.gramasPorMetro());
+        m.setMetrosPorUnidade(r.metrosPorUnidade());
     }
 
     public static MaterialResp paraResp(Material m) {
+        return paraResp(m, 0);
+    }
+
+    public static MaterialResp paraResp(Material m, int qtdAmostras) {
         return new MaterialResp(m.getId(), m.getNome(), m.getUnidade(), m.getQuantidade(), m.getEstoqueMinimo(),
-                m.getCustoUnitario(), m.isAbaixoDoMinimo());
+                m.getCustoUnitario(), m.isAbaixoDoMinimo(), m.getFiosPorCm(), m.getGramasPorMetro(), m.getMetrosPorUnidade(), qtdAmostras);
     }
 }

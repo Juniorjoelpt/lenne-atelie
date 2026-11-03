@@ -276,6 +276,24 @@ public class GestaoController {
         materiais.excluir(id);
     }
 
+    @GetMapping("/materiais/{id}/amostras")
+    public List<br.com.mssolucoes.atelie.dto.Dtos.AmostraResp> listarAmostras(@PathVariable Long id) {
+        return materiais.listarAmostras(id);
+    }
+
+    @PostMapping("/materiais/{id}/amostras")
+    @ResponseStatus(HttpStatus.CREATED)
+    public br.com.mssolucoes.atelie.dto.Dtos.AmostraResp criarAmostra(@PathVariable Long id,
+                                                                     @Valid @RequestBody br.com.mssolucoes.atelie.dto.Dtos.AmostraReq r) {
+        return materiais.criarAmostra(id, r);
+    }
+
+    @DeleteMapping("/materiais/amostras/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void excluirAmostra(@PathVariable Long id) {
+        materiais.excluirAmostra(id);
+    }
+
     // ---------- Portfólio ----------
 
     @GetMapping("/portfolio")

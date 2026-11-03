@@ -5,6 +5,7 @@ import Icone from '../componentes/Icone.jsx';
 import { Campo, Confirmar, Estado, Modal, ModalForm, lerForm, useCarregar, useToast, Vazio } from '../componentes/ui.jsx';
 import { FRENTES, calcularFicha, moeda, moedaUnit, qtd, qtdUn } from '../util.js';
 import { Topo } from './Layout.jsx';
+import CalculadoraFio, { ehFio } from '../componentes/CalculadoraFio.jsx';
 
 const FILTROS = [['TODAS', 'Todas'], ['PRONTA', 'Pronta-entrega'], ['CATALOGO', 'No catálogo do site'], ['INATIVAS', 'Inativas']];
 
@@ -231,6 +232,8 @@ function FichaForm({ produto: p, prec, aoFechar, aoSalvar }) {
   const porId = useMemo(() => Object.fromEntries((materiais.dados || []).map((m) => [String(m.id), m])), [materiais.dados]);
   const c = calcularFicha(f, porId, prec);
 
+  const [calc, setCalc] = useState(null);
+
   function mudarItem(i, k, v) {
     setF((x) => ({ ...x, itens: x.itens.map((it, j) => (j === i ? { ...it, [k]: v } : it)) }));
   }
@@ -284,13 +287,15 @@ function FichaForm({ produto: p, prec, aoFechar, aoSalvar }) {
 
           <fieldset className="receita">
             <legend>Materiais de uma peça</legend>
+            {f.itens.length > 0 && <p className="mudo" style={{ fontSize: 13, marginTop: -4 }}>Não sabe quanto fio vai? Use “Calcular quanto fio vai” embaixo do cordão.</p>}
             {materiais.dados?.length === 0 && (
               <p className="mudo forte">Cadastre primeiro os fios e argolas em <Link to="/admin/materiais">Materiais</Link>.</p>
             )}
             {f.itens.map((it, i) => {
               const m = porId[it.materialId];
               return (
-                <div key={i} className="receita-linha">
+                <div key={i} className="receita-bloco">
+                <div className="receita-linha">
                   <label className="sr" htmlFor={`f-mat-${i}`}>Material {i + 1}</label>
                   <select id={`f-mat-${i}`} className="entrada" value={it.materialId} onChange={(e) => mudarItem(i, 'materialId', e.target.value)}>
                     <option value="">Escolha…</option>
@@ -308,7 +313,17 @@ function FichaForm({ produto: p, prec, aoFechar, aoSalvar }) {
                   </div>
                   <span className="num forte" style={{ minWidth: 80 }}>{m ? moeda((Number(it.quantidade) || 0) * Number(m.custoUnitario)) : '—'}</span>
                   <button type="button" className="btn btn-fantasma btn-icone btn-p" aria-label="Tirar material"
-                    onClick={() => setF((x) => ({ ...x, itens: x.itens.filter((_, j) => j !== i) }))}><Icone nome="fechar" tamanho={16} /></button>
+                    onClick={() => { setCalc(null); setF((x) => ({ ...x, itens: x.itens.filter((_, j) => j !== i) })); }}><Icone nome="fechar" tamanho={16} /></button>
+                </div>
+                {m && ehFio(m) && calc !== i && (
+                  <button type="button" className="link-botao calc-fio-abrir" aria-label={`Calcular fio de ${m.nome}`} aria-expanded="false" onClick={() => setCalc(i)}>
+                    <Icone nome="material" tamanho={16} />Calcular quanto fio vai
+                  </button>
+                )}
+                {calc === i && m && (
+                  <CalculadoraFio key={m.id} material={m} aoFechar={() => setCalc(null)}
+                    aoUsar={(q) => { mudarItem(i, 'quantidade', q); setCalc(null); }} />
+                )}
                 </div>
               );
             })}

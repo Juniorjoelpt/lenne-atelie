@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { api, sessao } from '../api.js';
 import { ABAS_MATERIAIS, HistoricoPrecos, NovaCompra } from './Compras.jsx';
 import Icone from '../componentes/Icone.jsx';
-import { Campo, Confirmar, Estado, ModalForm, lerForm, useCarregar, useToast, Vazio } from '../componentes/ui.jsx';
+import { Campo, Confirmar, Estado, Modal, ModalForm, lerForm, useCarregar, useToast, Vazio } from '../componentes/ui.jsx';
 import { moeda, moedaUnit, qtdUn } from '../util.js';
 import { Abas, Topo } from './Layout.jsx';
+import { AmostrasFio } from '../componentes/CalculadoraFio.jsx';
 
 const qtd = (n) => Number(n).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 
@@ -14,6 +15,7 @@ export default function Materiais() {
   const [excluir, setExcluir] = useState(null);
   const [precos, setPrecos] = useState(null);
   const [compraVarios, setCompraVarios] = useState(false);
+  const [amostras, setAmostras] = useState(null);
   const ajudante = sessao.ajudante();
   const toast = useToast();
   const { dados, erro, carregando, recarregar } = useCarregar(() => api.get('/api/materiais'));
@@ -50,6 +52,9 @@ export default function Materiais() {
                           <button type="button" className="btn btn-claro btn-p" onClick={() => setAjuste({ m, tipo: 'SAIDA' })}>Usei</button>{' '}
                           {!ajudante && <>
                             <button type="button" className="btn btn-oliva btn-p" onClick={() => setAjuste({ m, tipo: 'ENTRADA' })}>Comprei</button>{' '}
+                            <button type="button" className="btn btn-fantasma btn-icone btn-p" aria-label={`Amostras de nó de ${m.nome}`} title="Amostras de nó (calculadora de fio)" onClick={() => setAmostras(m)}>
+                              <Icone nome="material" tamanho={18} />{m.amostras > 0 && <span className="contador-mini">{m.amostras}</span>}
+                            </button>
                             <button type="button" className="btn btn-fantasma btn-icone btn-p" aria-label={`Preços pagos em ${m.nome}`} title="Preços pagos" onClick={() => setPrecos(m)}><Icone nome="historico" tamanho={18} /></button>
                             <button type="button" className="btn btn-fantasma btn-icone btn-p" aria-label={`Editar ${m.nome}`} onClick={() => setForm(m)}><Icone nome="editar" tamanho={18} /></button>
                             <button type="button" className="btn btn-fantasma btn-icone btn-p" aria-label={`Excluir ${m.nome}`} onClick={() => setExcluir(m)}><Icone nome="lixo" tamanho={18} /></button>
@@ -67,7 +72,7 @@ export default function Materiais() {
 
       {form && (
         <ModalForm titulo={form.id ? 'Editar material' : 'Novo material'} aoFechar={() => setForm(null)} aoSalvar={async (fd) => {
-          const d = lerForm(fd, ['quantidade', 'estoqueMinimo', 'custoUnitario']);
+          const d = lerForm(fd, ['quantidade', 'estoqueMinimo', 'custoUnitario', 'fiosPorCm', 'gramasPorMetro', 'metrosPorUnidade']);
           if (form.id) await api.put(`/api/materiais/${form.id}`, d);
           else await api.post('/api/materiais', d);
           toast('Material salvo.');
@@ -80,6 +85,13 @@ export default function Materiais() {
           <Campo rotulo="Avisar quando chegar a" nome="estoqueMinimo" tipo="number" min="0" step="0.001" defaultValue={form.estoqueMinimo ?? 0} required />
           <Campo rotulo="Custo por unidade (R$)" nome="custoUnitario" tipo="number" min="0" step="0.0001" defaultValue={form.custoUnitario ?? 0} required
             dica="Ex.: rolo de 100 m por R$ 50 = R$ 0,50 por metro. Atualiza sozinho a cada compra." />
+          <p className="inteiro forte" style={{ marginTop: 6 }}>Para a calculadora de fio <span className="mudo">(opcional, só para fios e cordões)</span></p>
+          <Campo rotulo="Fios lado a lado em 1 cm" nome="fiosPorCm" tipo="number" min="0.1" step="0.1" defaultValue={form.fiosPorCm ?? ''}
+            dica="Encoste as pontas e conte quantas cabem em 1 cm. Ex.: cordão de 5 mm = 2." />
+          <Campo rotulo="Peso de 1 metro (g)" nome="gramasPorMetro" tipo="number" min="0.001" step="0.001" defaultValue={form.gramasPorMetro ?? ''}
+            dica="Pese 1 metro na balança de cozinha. Mostra quanto comprar em gramas." />
+          <Campo rotulo="Metros em 1 unidade" nome="metrosPorUnidade" tipo="number" min="0.001" step="0.001" defaultValue={form.metrosPorUnidade ?? ''} inteiro
+            dica="Só se a unidade não for metro: quantos metros tem 1 rolo ou novelo. Assim a calculadora preenche a ficha." />
         </ModalForm>
       )}
 
@@ -103,6 +115,12 @@ export default function Materiais() {
             <label className="checkbox inteiro"><input type="checkbox" name="registrarDespesa" defaultChecked /> Lançar a compra como despesa no financeiro</label>
           </>}
         </ModalForm>
+      )}
+
+      {amostras && (
+        <Modal titulo={`Amostras de nó · ${amostras.nome}`} largo aoFechar={() => { setAmostras(null); recarregar(); }}>
+          <AmostrasFio material={amostras} />
+        </Modal>
       )}
 
       {precos && <HistoricoPrecos material={precos} aoFechar={() => setPrecos(null)} />}
